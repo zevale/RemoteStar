@@ -11,7 +11,6 @@
 #include <iostream>
 #include <Windows.h>
 #include <cstdlib>
-#include <curses.h>
 
 
 // FORWARD DECLARATIONS
