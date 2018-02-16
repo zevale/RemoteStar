@@ -1,7 +1,8 @@
 /*
  * RemoteStar
  *
- * This program copies the files needed to run a STAR CCM+ simulation on a remote server and launches the simulation
+ * This program copies the files needed to run a STAR CCM+ simulation
+ * on a remote server and launches the simulation
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
@@ -31,8 +32,8 @@ int main(int argc, char * argv[])
     commandSSH(userSSH, serverSSH, "cd ~/Desktop && mkdir SendTest");
 
     // SCP file
-    copySSH(userSSH, serverSSH, "C:\\Users\\Nuno\\Desktop\\STAR-CCM+11.06.010_02_linux-x86_64-r8.tar.gz", "/home/nuno/Desktop/SendTest");
-
+    copySSH(userSSH, serverSSH, "C:\\Users\\Nuno\\Desktop\\STAR-CCM+11.06.010_02_linux-x86_64-r8.tar.gz",
+            "/home/nuno/Desktop/SendTest");
 
     return EXIT_SUCCESS;
 }
@@ -41,26 +42,29 @@ int copySSH(char * _userSSH, char * _serverSSH, char * _sourceFilePath, char * _
 {
     // Check if the OpenSSH exe exists first!
 
-    // CreateProcess API initialization
+    // CreateProcess API requires these two structures
     STARTUPINFO startupInfo;
     PROCESS_INFORMATION processInformation;
 
-    // Set the size of the structures
+    // Initialize the structures (ZeroMemory = memset)
     ZeroMemory( &startupInfo, sizeof(startupInfo));
     startupInfo.cb = sizeof(startupInfo);
     ZeroMemory(&processInformation, sizeof(processInformation));
 
-    // Start the child process - SCP
     // Get the scp.exe module
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\scp.exe";
-    // Generate the scp command assuming its size is less than MAX_PATH*3
+
+    // Generate the scp command assuming its size is less than MAX_PATH*3 (2 paths + commands)
     char commandArgs[MAX_PATH*3];
     memset(commandArgs, '\0', sizeof(commandArgs));
     sprintf(commandArgs, "scp %s %s@%s:%s", _sourceFilePath, _userSSH, _serverSSH, _destinationPath);
+
     // Message to user
-    std::cout << ":::::::::::: SENDING" << std::endl;
+    std::cout << "\n:::::::::::: SENDING" << std::endl;
     std::cout << "       FILE: " << _sourceFilePath << std::endl;
     std::cout << "DESTINATION: " << _userSSH << "@" << _serverSSH << ":" << _destinationPath << std::endl;
+
+    // Start the child process - SCP
     if( !CreateProcessA(
             moduleName,             // No module name
             commandArgs,            // Command line
@@ -91,26 +95,29 @@ int commandSSH(char * _userSSH, char * _serverSSH, char * _commandToExecute)
 {
     // Check if the OpenSSH exe exists first!
 
-    // CreateProcess API initialization
+    // Start the child process - SCP
     STARTUPINFO startupInfo;
     PROCESS_INFORMATION processInformation;
 
-    // Set the size of the structures
+    // Initialize the structures (ZeroMemory = memset)
     ZeroMemory( &startupInfo, sizeof(startupInfo));
     startupInfo.cb = sizeof(startupInfo);
     ZeroMemory(&processInformation, sizeof(processInformation));
 
-    // Start the child process - SSH
     // Get the ssh.exe module
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
+
     // Generate the scp command
     int commandArgsSize = 1024;
     char commandArgs[commandArgsSize];
     memset(commandArgs, '\0', sizeof(commandArgs));
     sprintf(commandArgs, "ssh  -t %s@%s %s", _userSSH, _serverSSH, _commandToExecute);
+
     // Message to user
     std::cout << ":::::::::::: SSH COMMAND" << std::endl;
     std::cout << "    COMMAND: " << _commandToExecute << std::endl;
+
+    // Start the child process - SSH
     if( !CreateProcessA(
             moduleName,             // No module name
             commandArgs,            // Command line
