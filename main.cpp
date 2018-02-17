@@ -2,7 +2,10 @@
  * RemoteStar
  *
  * This program copies the files needed to run a STAR CCM+ simulation
- * on a remote server and launches the simulation
+ * on a remote server and launches the simulation.
+ *
+ * Files are copied with scp and commands are sent with ssh.
+ * This requires using Microsoft's native OpenSSH client.
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
@@ -13,32 +16,89 @@
 #include <cstdlib>
 
 
+// SSH Class hold the data to establish the connection to the SSH server. Required by secureShell() and secureCopy().
+class SSH {
+    char * _userSSH;
+    char * _serverSSH;
+public:
+    SSH () {
+        _userSSH = "nuno";
+        _serverSSH = "cfar-athena.me.uvic.ca";
+    }
+    void setUserSSH(char * _newUserSSH) {
+        _userSSH = _newUserSSH;
+    }
+    void setServerSSH(char * _newServerSSH) {
+        _serverSSH = _newServerSSH;
+    }
+    char * getUserSSH() {
+        return _userSSH;
+    }
+    char * getServerSSH() {
+        return _serverSSH;
+    }
+    void printConnectionData() {
+        std::cout << "\n:::::::::::: SSH CONNECTION" << std::endl;
+        std::cout << "       USER: " << _userSSH << std::endl;
+        std::cout << "     SERVER: " << _serverSSH << std::endl;
+    }
+};
+
 // FORWARD DECLARATIONS
 
 // Print interpreted error message
 void error(const char* errorMessage);
 
 // Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...". Must use an authentication key.
-bool secureShell(char *_userSSH, char *_serverSSH, char *_commandToExecute);
+int secureShell(SSH _sshConnection, char *_commandToExecute);
+
+int secureShellScreen(SSH _sshConnection, char *_commandToExecute);
 
 // Execute SCP from client computer to SSH server. Must use an authentication key.
-bool secureCopy(char *_userSSH, char *_serverSSH, char *_sourceFilePath, char *_destinationPath);
+int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath);
 
 // Executes a process using createProcessA.
-bool executeProcess(char * _moduleName, char * _commandArgs);
+int executeProcess(char * _moduleName, char * _commandArgs);
 
 int main(int argc, char * argv[])
 {
     // SSH DATA
-    char userSSH[] = "nuno";
-    char serverSSH[] = "cfar-athena.me.uvic.ca";
+    SSH sshConnection;
 
-    // SSH command
-    secureShell(userSSH, serverSSH, "cd ~/Desktop && mkdir SendTest");
+    // Print connection data
+    sshConnection.printConnectionData();
 
-    // SCP file
-    secureCopy(userSSH, serverSSH, "C:\\Users\\Nuno\\Desktop\\STAR-CCM+11.06.010_02_linux-x86_64-r8.tar.gz",
-               "/home/nuno/Desktop/SendTest");
+    // SSH command: create RemoteStar folder
+    secureShell(sshConnection, "cd ~/Desktop && mkdir RemoteStar");
+
+    // SCP file - shell script RunStar
+    secureCopy(sshConnection, "C:\\Users\\Nuno\\Desktop\\RemoteStar\\runStar",
+               "/home/nuno/Desktop/RemoteStar");
+
+    // SCP file - shell script launcher
+    secureCopy(sshConnection, "C:\\Users\\Nuno\\Desktop\\RemoteStar\\launcher",
+               "/home/nuno/Desktop/RemoteStar");
+
+    // SCP file - macro MacroClean.java
+    secureCopy(sshConnection, "C:\\Users\\Nuno\\Desktop\\RemoteStar\\MacroClean.java",
+               "/home/nuno/Desktop/RemoteStar");
+
+    // SCP file - domain geometry
+    secureCopy(sshConnection, "C:\\Users\\Nuno\\Desktop\\RemoteStar\\DomainGeometry.x_b",
+               "/home/nuno/Desktop/RemoteStar");
+
+    // SCP file - aircraft geometry SurfMesh.stl
+    secureCopy(sshConnection, "C:\\Users\\Nuno\\Desktop\\RemoteStar\\SurfMesh.stl",
+               "/home/nuno/Desktop/RemoteStar");
+
+    // SSH command: set script permissions
+    secureShell(sshConnection, "cd /home/nuno/Desktop/RemoteStar && chmod 775 runStar");
+
+    // SSH command: run using screen  -d -m means new screen session in detached mode
+    secureShellScreen(sshConnection, "screen -S starSession -d -m /home/nuno/Desktop/RemoteStar/runStar");
+
+    // Connect to screen to monitor
+    secureShell(sshConnection, "screen -r starSession");
 
     /* secureShell and secureCopy output eventual errors to cerr. These errors must be handled so that the simulation
      * does not stop.
@@ -55,7 +115,7 @@ void error(const char* errorMessage)
     exit(EXIT_FAILURE);
 }
 
-bool executeProcess(char * _moduleName, char * _commandArgs)
+int executeProcess(char * _moduleName, char * _commandArgs)
 {
     // Check if the moduleName exists first!
 
@@ -70,8 +130,8 @@ bool executeProcess(char * _moduleName, char * _commandArgs)
 
     // Start the child process - SCP
     if( !CreateProcessA(
-            moduleName,             // No module name
-            commandArgs,            // Command line
+            _moduleName,            // No module name
+            _commandArgs,           // Command line
             nullptr,                // Process handle not inheritable
             nullptr,                // Thread handle not inheritable
             FALSE,                  // Set handle inheritance to FALSE
@@ -95,7 +155,7 @@ bool executeProcess(char * _moduleName, char * _commandArgs)
     return TRUE;
 }
 
-bool secureCopy(char *_userSSH, char *_serverSSH, char *_sourceFilePath, char *_destinationPath)
+int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath)
 {
     // Get the scp.exe module
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\scp.exe";
@@ -103,23 +163,23 @@ bool secureCopy(char *_userSSH, char *_serverSSH, char *_sourceFilePath, char *_
     // Generate the scp command assuming its size is less than MAX_PATH*3 (2 paths + commands)
     char commandArgs[MAX_PATH*3];
     memset(commandArgs, '\0', sizeof(commandArgs));
-    sprintf(commandArgs, "scp %s %s@%s:%s", _sourceFilePath, _userSSH, _serverSSH, _destinationPath);
+    sprintf(commandArgs, "scp %s %s@%s:%s", _sourceFilePath, _sshConnection.getUserSSH(),
+            _sshConnection.getServerSSH(), _destinationPath);
 
     // Message to user
     std::cout << "\n:::::::::::: SENDING" << std::endl;
     std::cout << "       FILE: " << _sourceFilePath << std::endl;
-    std::cout << "DESTINATION: " << _userSSH << "@" << _serverSSH << ":" << _destinationPath << std::endl;
+    std::cout << "DESTINATION: " << _destinationPath << std::endl;
 
     // Execute SCP
     if(!executeProcess(moduleName, commandArgs)) {
         std::cerr << "ERROR: cannot execute SCP" << std::endl;
         return FALSE;
     }
-
     return TRUE;
 }
 
-bool secureShell(char *_userSSH, char *_serverSSH, char *_commandToExecute)
+int secureShell(SSH _sshConnection, char *_commandToExecute)
 {
     // Get the ssh.exe module
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
@@ -128,10 +188,35 @@ bool secureShell(char *_userSSH, char *_serverSSH, char *_commandToExecute)
     int commandArgsSize = 1024;
     char commandArgs[commandArgsSize];
     memset(commandArgs, '\0', sizeof(commandArgs));
-    sprintf(commandArgs, "ssh  -t %s@%s %s", _userSSH, _serverSSH, _commandToExecute);
+    sprintf(commandArgs, "ssh  -t %s@%s ""%s""", _sshConnection.getUserSSH(), _sshConnection.getServerSSH(),
+            _commandToExecute);
 
     // Message to user
-    std::cout << ":::::::::::: SSH COMMAND" << std::endl;
+    std::cout << "\n:::::::::::: SSH COMMAND" << std::endl;
+    std::cout << "    COMMAND: " << _commandToExecute << "\n" << std::endl;
+
+    // Execute SSH
+    if(!(executeProcess(moduleName, commandArgs))) {
+        std::cerr << "ERROR: cannot execute SSH command" << std::endl;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+int secureShellScreen(SSH _sshConnection, char *_commandToExecute)
+{
+    // Get the ssh.exe module
+    char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
+
+    // Generate the scp command
+    int commandArgsSize = 1024;
+    char commandArgs[commandArgsSize];
+    memset(commandArgs, '\0', sizeof(commandArgs));
+    sprintf(commandArgs, "ssh %s@%s ""%s""", _sshConnection.getUserSSH(), _sshConnection.getServerSSH(),
+            _commandToExecute);
+
+    // Message to user
+    std::cout << "\n:::::::::::: SSH COMMAND" << std::endl;
     std::cout << "    COMMAND: " << _commandToExecute << std::endl;
 
     // Execute SSH
@@ -139,6 +224,6 @@ bool secureShell(char *_userSSH, char *_serverSSH, char *_commandToExecute)
         std::cerr << "ERROR: cannot execute SSH command" << std::endl;
         return FALSE;
     }
-
+    system("cls");
     return TRUE;
 }
