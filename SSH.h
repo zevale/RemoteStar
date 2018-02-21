@@ -1,4 +1,12 @@
-// SSH Class hold the data to establish the connection to the SSH server. Required by secureShell() and secureCopy().
+/*
+ * SSH.h
+ *
+ * SSH holds the data to establish the connection to the SSH server.
+ * Required by star_client
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ */
 
 #ifndef SSH_H
 #define SSH_H
@@ -15,6 +23,5 @@ public:
     char * getServerSSH ();
     void   printConnectionData();
 };
-
 
 #endif //SSH_H
