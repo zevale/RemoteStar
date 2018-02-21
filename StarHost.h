@@ -20,12 +20,14 @@ private:
     std::vector<std::string> _address;      // Host address
     std::vector<HostType>    _hostType;     // localhost -> macro is sent to this host
     std::vector<int>         _processes;    // Number of processes
+    int                      _nHosts;       // Number of hosts
 public:
     // Getters for private members
     std::string getAlias    (int _iHost);
     std::string getAddress  (int _iHost);
-    std::string getHostType (int _iHost);
+    HostType    getHostType (int _iHost);
     int         getProcesses(int _iHost);
+    int         getNumHosts ();
 
     // Class methods
     void loadHostList();

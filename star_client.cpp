@@ -294,11 +294,45 @@ int initializeStarHost(StarHost& _starHost)
 
     // Write shell script to run simulation on hosts loaded
     // Open file
-    std::ofstream shellRunScript("/home/nuno/Dev/RemoteStar/run_star");
+    std::ofstream shellRunScript("/home/nuno/Desktop/RemoteStar/run_star");
 
     // Check if file is open
-    if(!shellRunScript.is_open())
-        throw "Cannot write shell script <run_star>";
+    if(!shellRunScript)
+        perror("Cannot write shell script <run_star>");
+
+    // Initialize sheBang and STAR CCM+ command line arguments
+    std::string sheBang = "#!/bin/sh";
+    std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
+    std::string starLicense = "-power ";
+    std::string starExit = "-noexit ";
+    std::string starInfiniBand = "-fabric IBV ";
+    std::string starHost;
+    std::string starMacro = " -batch ";
+    std::string macroPath = "/home/nuno/Desktop/RemoteStar/MacroClean.java";
+
+    // Generate host list
+    int nHosts = _starHost.getNumHosts();
+    if(nHosts == 1){
+        // One host: has to be submitted to the same ssh server and only need to add -np
+        starHost = std::string("-np ") + std::to_string(_starHost.getProcesses(0));
+    } else {
+        // Generate host list
+        starHost = starInfiniBand + std::string("-on ");
+        for (int i = 0; i < nHosts ; ++i) {
+            if(_starHost.getHostType(i) == LOCALHOST){
+                starHost += "localhost:" + std::to_string(_starHost.getProcesses(i));
+            } else {
+                starHost += _starHost.getAddress(i).append(":") + std::to_string(_starHost.getProcesses(i));
+            }
+            // Add comma between hosts
+            if(i < nHosts-1)
+                starHost += ",";
+        }
+    }
+    // Output to file
+    shellRunScript << sheBang << std::endl;
+    shellRunScript << starPath << starLicense << starExit << starHost << starMacro << macroPath;
+    shellRunScript.close();
 
     std::cout << "\n Press any key to continue..." << std::endl;
     std::cin.get();

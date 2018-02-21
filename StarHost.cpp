@@ -18,14 +18,19 @@ std::string StarHost::getAddress(int _iHost)
     return _address[_iHost];
 }
 
-std::string StarHost::getHostType(int _iHost)
+HostType StarHost::getHostType(int _iHost)
 {
-    return (_hostType[_iHost] == LOCALHOST) ? "localhost" : "remote host";
+    return _hostType[_iHost];
 }
 
 int StarHost::getProcesses(int _iHost)
 {
     return _processes[_iHost];
+}
+
+int StarHost::getNumHosts()
+{
+    return _nHosts;
 }
 
 void StarHost::loadHostList()
@@ -41,13 +46,15 @@ void StarHost::loadHostList()
     if(!hostListFile.is_open())
         throw "Cannot open file <host_list>";
 
-    int nHostWord = 0;
+    int countHostWord = 0;          // Counts host keywords
+    int countHosts = 0;             // Counts number of hosts
     while(hostListFile >> word) {
         // Check new host
         if(word == "#HOST"){
-            nHostWord = 0;
+            countHostWord = 0;
+            ++countHosts;
         }
-        switch(nHostWord)
+        switch(countHostWord)
         {
             case 0:
                 break;
@@ -88,8 +95,9 @@ void StarHost::loadHostList()
             default:
                 throw "Wrong syntax in file <host_list>";
         }
-        ++nHostWord;
+        ++countHostWord;
     }
+    _nHosts = countHosts;
     if(hostListFile.bad())
         throw "Cannot read file";
 
@@ -104,7 +112,7 @@ void StarHost::printHostList()
     for (int i = 0; i < nHosts; ++i) {
         std::cout << "       Host: " << getAlias(i) << std::endl;
         std::cout << "    Address: " << getAddress(i) << std::endl;
-        std::cout << "       Type: " << getHostType(i) << std::endl;
+        std::cout << "       Type: " << ((_hostType[i] == LOCALHOST) ? "localhost" : "remote host") << std::endl;
         std::cout << "  Processes: " << getProcesses(i) << std::endl;
         if(nHosts > 1 && i < nHosts-1)
             std::cout << "------------ " << std::endl;
