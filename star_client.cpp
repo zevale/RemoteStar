@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -13,6 +14,7 @@
 #include <sys/wait.h>
 #include <linux/limits.h>
 #include <sstream>
+#include <vector>
 #include <cstring>
 #include <thread>
 #include <chrono>
@@ -25,9 +27,9 @@
 
 // FUNCTIONS DEFINITIONS
 
-void error(const char* _errorMessage)
+void error(const char* errorMessage)
 {
-    perror(_errorMessage);
+    perror(errorMessage);
     exit(EXIT_FAILURE);
 }
 
@@ -87,7 +89,10 @@ int executeProcess(char * _moduleName, char * _commandArgs)
 
     spawnStatus = posix_spawn(&processID, _moduleName, nullptr, nullptr, charPtrConstPtrArguments, nullptr);
     if((spawnStatus) == 0) {
-        if (waitpid(processID, &spawnStatus, 0) == -1) {
+        std::cout << "SPAWN_POSIX PID = " << processID << std::endl;
+        if (waitpid(processID, &spawnStatus, 0) != -1) {
+            std::cout << "SPAWN_POSIX CHILD EXITED WITH STATUS = " << spawnStatus << std::endl;
+        } else {
             error("ERROR: waitpid");
             return FALSE;
         }
@@ -169,24 +174,26 @@ int secureShell(SSH _sshConnection, char *_commandToExecute)
     std::cout << "    COMMAND: " << _commandToExecute << "\n" << std::endl;
 
     // Check is screen command
-    bool screenConnect = false;
+    bool screenCommand = false;
     if(strncmp(_commandToExecute, (char *) "screen", 6) == 0)
-        screenConnect = true;
-
-    if(screenConnect)
-        loadingScreen(_sshConnection);
+        screenCommand = true;
 
     // Execute SSH
-#ifdef _WIN32
+    if(screenCommand)
+        loadingScreen();
+
     if(!(executeProcess(moduleName, commandArgs))) {
         std::cerr << "ERROR: cannot execute SSH command" << std::endl;
         return FALSE;
     }
-#endif
 
 #ifdef linux
     // Check if it is a screen command
-    if(screenConnect){
+    if(screenCommand){
+        // Use system for screen command
+        std::cout << "    CONNECTING TO " << _sshConnection.getServerSSH() << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        loadingScreen();
         system(commandArgs);
     } else {
         // Run command using execute
@@ -228,36 +235,26 @@ int secureShellScreen(SSH _sshConnection, char *_commandToExecute)
         std::cerr << "ERROR: cannot execute SSH screen" << std::endl;
         return FALSE;
     }
+#ifdef _WIN32
+    system("cls");
+#endif
+#ifdef linux
+    system("clear");
+#endif
     return TRUE;
 }
 
-void loadingScreen(SSH _sshConnection){
+void loadingScreen(){
 #ifdef _WIN32
     system("cls");
 #endif
 #ifdef linux
     system("clear");
 #endif
-
-    // Connecting
-    std::cout << "\n    CONNECTING TO " << _sshConnection.getServerSSH() << std::endl;
-#ifdef _WIN32
-    Sleep(3000);
-    system("cls");
-#endif
-#ifdef linux
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-    system("clear");
-#endif
-
-    // Loading screen
     std::string buffer;
     std::ifstream textFile;
 #ifdef _WIN32
     textFile.open("C:\\Users\\Nuno\\Dev\\RemoteStar\\screen1");
-#endif
-#ifdef linux
-    textFile.open("/home/nuno/Dev/RemoteStar/screen1");
 #endif
     if(!textFile) {
         std::cerr << "ERROR: cannot open loading screen" << std::endl;
@@ -274,33 +271,4 @@ void loadingScreen(SSH _sshConnection){
         }
         textFile.close();
     }
-}
-
-int initializeStarHost(StarHost& _starHost)
-{
-    // Load hosts
-    try
-    {
-        _starHost.loadHostList();
-    }
-    catch (const char* loadHostException)
-    {
-        // Error loading hosts from <host_list>
-        std::cerr << "ERROR: " << loadHostException << std::endl;
-        return FALSE;
-    }
-    // Show host list
-    _starHost.printHostList();
-
-    // Write shell script to run simulation on hosts loaded
-    // Open file
-    std::ofstream shellRunScript("/home/nuno/Dev/RemoteStar/run_star");
-
-    // Check if file is open
-    if(!shellRunScript.is_open())
-        throw "Cannot write shell script <run_star>";
-
-    std::cout << "\n Press any key to continue..." << std::endl;
-    std::cin.get();
-    return TRUE;
 }
