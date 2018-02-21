@@ -1,0 +1,10 @@
+#HOST
+alias Athena
+address cfar-athena.me.uvic.ca
+type localhost
+processes 32
+#HOST
+alias Poseidon
+address cfar-poseidon.me.uvic.ca
+type remote
+processes 32
