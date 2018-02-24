@@ -1,6 +1,7 @@
 /*
- * star_client.h
+ * LIBRARY star_client
  *
+ * DESCRIPTION
  * Functions used in the client that sends data and jobs
  * to the STAR CCM+ server.
  *
@@ -12,16 +13,52 @@
 #define STAR_CLIENT_H
 
 #include "SSH.h"        // Class SSH used to store ssh connection data
-#include "StarHost.h"
+#include "StarHost.h"   // Class used to store the host list fro parallel session
 
-#ifdef linux            // Linux systems require an additional function to parse arguments for spawn
-#include <vector>
+// Linux support
+#ifdef linux
+#include <vector>       // Linux systems require an additional function to parse arguments for spawn
+#include <unistd.h>     // To work with directories
 #endif
 
-// FORWARD DECLARATIONS
+// When using scp the command syntax changes if copying from or to server
+enum CopyDirection{
+    TO_SERVER = 0,
+    FROM_SERVER
+};
 
-// Print interpreted error message
-void error(const char* _errorMessage);
+// GENERAL FUNCTIONALITY
+
+// Print interpreted error message and exit
+void errorInterpreted(const char* _errorMessage);
+
+// Print error message to std::cerr and exit
+void exitNow(std::string _errorMessage);
+
+// Change current directory
+void changeDirectory(std::string _workingDirectory);
+
+// Get current working directory
+std::string getDirectory();
+
+// Check if file exists in a directory
+bool fileExists(const std::string& _filePath);
+
+// STAR CLIENT SPECIFIC FUNCTIONS
+
+/*
+ * Executes a Windows process using createProcessA.
+ * Executes a Linux process using spawn. When connecting screen, Linux clients use system().
+ */
+int executeProcess(char * _moduleName, char * _commandArgs);
+
+/*
+ * Using spawn_posix() requires the command line arguments to be type char * const *.
+ * strArrayToCharPtrConstPtr will convert the split arguments in a vector<string> into char * const *
+ */
+#ifdef linux
+char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray);
+#endif
 
 /* Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
  * Must use an authentication key for automatic login.
@@ -37,13 +74,7 @@ int secureShellScreen(SSH _sshConnection, char *_commandToExecute);
 /* Execute SCP from client computer to SSH server.
  * Must use an authentication key.
  */
-int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath);
-
-/*
- * Executes a Windows process using createProcessA.
- * Executes a Linux process using spawn. When connecting screen, Linux clients use system().
- */
-int executeProcess(char * _moduleName, char * _commandArgs);
+int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath, CopyDirection _copyDirection);
 
 /* Loading screen while STAR CCM+ is loading.
  * A custom text message can be displayed line-by-line while the client is connecting to the server.
@@ -51,18 +82,13 @@ int executeProcess(char * _moduleName, char * _commandArgs);
 void loadingScreen(SSH _sshConnection);
 
 /*
- * Using spanw_posix() requires the command line arguments to be type char * const *.
- * strArrayToCharPtrConstPtr will convert the split arguments in a vector<string> into char * const *
+ * Loads the SSH server data from file <star_sshServer> and initializes the _sshConnection
  */
-#ifdef linux
-char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray);
-#endif
+int initializeSSH(SSH& _sshConnection);
 
 /*
- * This function will generate the shell script that starts up STAR CCM+
+ * Loads the host list from file <star_hostList> and generates the shell script that starts up STAR CCM+
  * Will also probably need a StarMacro class that contains information about the macro file path
  */
 int initializeStarHost(StarHost& _starHost);
-
-
 #endif //SSH_H
