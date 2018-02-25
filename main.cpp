@@ -59,7 +59,7 @@ int main(int argc, char * argv[]) {
     secureCopy(sshConnection, domainGeometrySource, serverDestination, TO_SERVER);
 
     // SCP file - aircraft geometry SurfMesh.stl
-    secureCopy(sshConnection, aircraftGeometrySource, serverDestination, TO_SERVER);
+    // secureCopy(sshConnection, aircraftGeometrySource, serverDestination, TO_SERVER);
 
     // SSH command: set script permissions
     secureShell(sshConnection,

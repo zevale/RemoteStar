@@ -373,6 +373,16 @@ void loadingScreen(SSH _sshConnection){
     }
 }
 
+/*
+ * initializeSSH()
+ *
+ * DESCRIPTION
+ * Loads the SSH server data from file <star_sshServer> and initializes
+ * the _sshConnection
+ *
+ * RETURN
+ * TRUE (1) in case of success or FALSE (0) otherwise
+ */
 int initializeSSH(SSH& _sshConnection) {
     // Load ssh server data
     try {
@@ -387,6 +397,16 @@ int initializeSSH(SSH& _sshConnection) {
     return TRUE;
 }
 
+/*
+ * initializeStarHost()
+ *
+ * DESCRIPTION
+ * Loads the host list from file <star_hostList> and generates the
+ * shell script that starts up STAR CCM+
+ *
+ * RETURN
+ * TRUE (1) in case of success or FALSE (0) otherwise
+ */
 int initializeStarHost(StarHost& _starHost) {
     // Load hosts
     try {
