@@ -5,8 +5,11 @@
 
 /*
  * Getters
+ *
+ * NOTE
+ * Overloaded getters will append a _subPath to either ClientJobDirectory or ServerJobDirectory .
+ * There is no need to start _subPath with "/"
  */
-
 std::string StarJob::getJobName() const {
     return jobName;
 }
@@ -15,8 +18,12 @@ std::string StarJob::getClientDirectory() const {
     return clientDirectory;
 }
 
-std::string StarJob::getClientDirectory(const std::string& _subPath) const {
-    return (clientDirectory + _subPath);
+std::string StarJob::getClientJobDirectory() const {
+    return (clientDirectory + jobName + std::string("/"));
+}
+
+std::string StarJob::getClientJobDirectory(const std::string& _subPath) const {
+    return (clientDirectory + jobName + std::string("/") + _subPath);
 }
 
 std::string StarJob::getServerDirectory() const {
@@ -25,6 +32,10 @@ std::string StarJob::getServerDirectory() const {
 
 std::string StarJob::getServerDirectory(const std::string& _subPath) const {
     return (serverDirectory + _subPath);
+}
+
+bool StarJob::getSaveSimFile() const{
+    return saveSimFile;
 }
 
 /*
@@ -88,6 +99,18 @@ void StarJob::loadStarJob() {
                 break;
             case 6:
                 serverDirectory = word;
+                break;
+            case 7:
+                if(word != "save_sim_file")
+                    throw "Tag <save_sim_file> not found";
+                break;
+            case 8:
+                if(word == "yes")
+                    saveSimFile = true;
+                else if(word == "no")
+                    saveSimFile = false;
+                else
+                    throw "Usage <save_sim_file> yes/no";
                 break;
             default:
                 if(word != "#END_STAR_JOB")

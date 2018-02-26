@@ -109,7 +109,7 @@ void StarHost::loadHostList() {
     nHosts = countHosts;
     // Final check
     if(hostListFile.bad())
-        throw "Cannot read file";
+        throw "Cannot read file <star_hostList>";
 
     // Close file
     hostListFile.close();

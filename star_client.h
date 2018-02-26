@@ -92,10 +92,20 @@ int initializeSSH(SSH& _sshConnection);
  * Loads the host list from file <star_hostList> and generates the shell script that starts up STAR CCM+
  * Will also probably need a StarMacro class that contains information about the macro file path
  */
-int initializeStarHost(StarHost& _starHost);
+int initializeStarHost(StarHost& _starHost, const StarJob& _starJob);
 
 /*
  * Loads the job data file <star_jobData> required to run the STAR CCM+ simulation
  */
 int initializeStarJob(StarJob& _starJob);
+
+/*
+ * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
+ */
+void submitJob(const SSH& _sshConnection, const StarJob& _starJob);
+
+/*
+ * Gets the results from the server
+ */
+int fetchResults(const SSH& _sshConnection, const StarJob& _starJob);
 #endif //SSH_H

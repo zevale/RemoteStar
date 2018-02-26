@@ -388,7 +388,7 @@ int initializeSSH(SSH& _sshConnection) {
         _sshConnection.loadSSH();
     } catch (const char* loadSshException) {
         // Error loading ssh server data from <star_sshServer>
-        std::cerr << "ERROR: " << loadSshException << std::endl;
+        std::cerr << "\nERROR: " << loadSshException << std::endl;
         return FALSE;
     }
     // Show SSH server
@@ -406,59 +406,59 @@ int initializeSSH(SSH& _sshConnection) {
  * RETURN
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
-int initializeStarHost(StarHost& _starHost) {
-    // Load hosts
+int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
+    // Load hosts and write shell script
     try {
         _starHost.loadHostList();
+
+        // Write shell script to run simulation on hosts loaded
+        // Open file
+        std::ofstream shellRunScriptFile(_starJob.getClientJobDirectory("resources/star_runScript"));
+
+        // Check if file is open
+        if(!shellRunScriptFile)
+            throw "Cannot write shell script <star_runScript>";
+
+        // Initialize sheBang and STAR CCM+ command line arguments
+        std::string sheBang = "#!/bin/sh";
+        std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
+        std::string starLicense = "-power ";
+        std::string starExit = "-noexit ";
+        std::string starInfiniBand = "-fabric IBV ";
+        std::string starHost;
+        std::string starMacro = " -batch ";
+        std::string macroPath = "/home/nuno/Desktop/RemoteStar/sim/MacroClean.java";
+
+        // Generate host list
+        int nHosts = _starHost.getNumHosts();
+        if(nHosts == 1){
+            // One host: has to be submitted to the same ssh server and only need to add -np
+            starHost = std::string("-np ") + std::to_string(_starHost.getProcesses(0));
+        } else {
+            // Generate host list
+            starHost = starInfiniBand + std::string("-on ");
+            for (int i = 0; i < nHosts ; ++i) {
+                if(_starHost.getHostType(i) == LOCALHOST){
+                    starHost += "localhost:" + std::to_string(_starHost.getProcesses(i));
+                } else {
+                    starHost += _starHost.getAddress(i).append(":") + std::to_string(_starHost.getProcesses(i));
+                }
+                // Add comma between hosts
+                if(i < nHosts-1)
+                    starHost += ",";
+            }
+        }
+        // Output to file
+        shellRunScriptFile << sheBang << std::endl;
+        shellRunScriptFile << starPath << starLicense << starExit << starHost << starMacro << macroPath;
+        shellRunScriptFile.close();
     } catch (const char* loadHostException) {
         // Error loading hosts from <star_hostList>
-        std::cerr << "ERROR: " << loadHostException << std::endl;
+        std::cerr << "\nERROR: " << loadHostException << std::endl;
         return FALSE;
     }
     // Show host list
     _starHost.printHostList();
-
-    // Write shell script to run simulation on hosts loaded
-    // Open file
-    std::ofstream shellRunScript("./sim/star_runScript");
-
-    // Check if file is open
-    if(!shellRunScript)
-        perror("Cannot write shell script <star_runScript>");
-
-    // Initialize sheBang and STAR CCM+ command line arguments
-    std::string sheBang = "#!/bin/sh";
-    std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
-    std::string starLicense = "-power ";
-    std::string starExit = "-noexit ";
-    std::string starInfiniBand = "-fabric IBV ";
-    std::string starHost;
-    std::string starMacro = " -batch ";
-    std::string macroPath = "/home/nuno/Desktop/RemoteStar/sim/MacroClean.java";
-
-    // Generate host list
-    int nHosts = _starHost.getNumHosts();
-    if(nHosts == 1){
-        // One host: has to be submitted to the same ssh server and only need to add -np
-        starHost = std::string("-np ") + std::to_string(_starHost.getProcesses(0));
-    } else {
-        // Generate host list
-        starHost = starInfiniBand + std::string("-on ");
-        for (int i = 0; i < nHosts ; ++i) {
-            if(_starHost.getHostType(i) == LOCALHOST){
-                starHost += "localhost:" + std::to_string(_starHost.getProcesses(i));
-            } else {
-                starHost += _starHost.getAddress(i).append(":") + std::to_string(_starHost.getProcesses(i));
-            }
-            // Add comma between hosts
-            if(i < nHosts-1)
-                starHost += ",";
-        }
-    }
-    // Output to file
-    shellRunScript << sheBang << std::endl;
-    shellRunScript << starPath << starLicense << starExit << starHost << starMacro << macroPath;
-    shellRunScript.close();
 
     std::cout << "\n Press <enter> to continue..." << std::endl;
     std::cin.get();
@@ -475,15 +475,25 @@ int initializeStarHost(StarHost& _starHost) {
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int initializeStarJob(StarJob& _starJob) {
-    // Load job data
+    // Load job data and check sim files exist
     try {
+        // Load job
         _starJob.loadStarJob();
+
+        // Check aircraft geometry
+        if(!fileExists(_starJob.getClientJobDirectory("resources/SurfMesh.stl")))
+            throw "Aircraft geometry not found";
+
+        // Check domain geometry
+        if(!fileExists(_starJob.getClientJobDirectory("resources/DomainGeometry.x_b")))
+            throw "Domain geometry not found";
+
     } catch(const char * loadJobException) {
         // Error loading hosts from <star_hostList>
         std::cerr << "ERROR: " << loadJobException << std::endl;
         return FALSE;
     }
-    // CHECK FILES: <star_sshServer> <star_hostList>
+    // Check resources: <star_sshServer> <star_hostList>
 
     // Print job data
     _starJob.printJobData();
@@ -491,4 +501,91 @@ int initializeStarJob(StarJob& _starJob) {
     // Change directory
     changeWorkingDirectory(_starJob.getClientDirectory());
     return TRUE;
+}
+
+/*
+ * submitJob()
+ *
+ * DESCRIPTION
+ * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
+ */
+void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
+    // Set paths to source files and path to destination folder
+#ifdef _WIN32
+    std::string runStarSource = _starJob.getClientJobDirectory("resources\\star_runScript");
+    std::string macroSource = _starJob.getClientJobDirectory("resources\\MacroClean.java");
+    std::string domainGeometrySource = _starJob.getClientJobDirectory("resources/DomainGeometry.x_b");
+    std::string aircraftGeometrySource = _starJob.getClientJobDirectory("resources\\SurfMesh.stl");
+#endif
+#ifdef linux
+    std::string runStarSource = _starJob.getClientJobDirectory("resources/star_runScript");
+    std::string macroSource = _starJob.getClientJobDirectory("resources/MacroClean.java");
+    std::string domainGeometrySource = _starJob.getClientJobDirectory("resources/DomainGeometry.x_b");
+    std::string aircraftGeometrySource = _starJob.getClientJobDirectory("resources/SurfMesh.stl");
+#endif
+    std::string serverDestination = _starJob.getServerDirectory("RemoteStar/sim");
+
+    // SSH command: create RemoteStar folders
+    std::string createServerFolders = std::string("cd ") + _starJob.getServerDirectory() +
+                                      std::string(" && mkdir -p RemoteStar/sim && mkdir -p RemoteStar/results");
+    secureShell(_sshConnection, createServerFolders);
+
+    // SCP file - shell script runStar
+    secureCopy(_sshConnection, runStarSource, serverDestination, TO_SERVER);
+
+    // SCP file - macro MacroClean.java
+    secureCopy(_sshConnection, macroSource, serverDestination, TO_SERVER);
+
+    // SCP file - domain geometry
+    secureCopy(_sshConnection, domainGeometrySource, serverDestination, TO_SERVER);
+
+    // SCP file - aircraft geometry SurfMesh.stl
+    secureCopy(_sshConnection, aircraftGeometrySource, serverDestination, TO_SERVER);
+
+    // SSH command: set script permissions
+    std::string setScriptPermissions = std::string("cd ") + _starJob.getServerDirectory() +
+                                       std::string("RemoteStar/sim ") + std::string("&& chmod 775 star_runScript");
+    secureShell(_sshConnection, setScriptPermissions);
+
+    // SSH command: run using screen  -d -m means new screen session in detached mode
+    std::string newScreenSession = std::string("screen -S starSession -d -m ") +
+                                   _starJob.getServerDirectory() + std::string("RemoteStar/sim/star_runScript");
+    secureShellScreen(_sshConnection, newScreenSession);
+
+    // Connect to screen to monitor
+    secureShell(_sshConnection, "screen -r starSession");
+}
+
+/*
+ * initializeStarHost()
+ *
+ * DESCRIPTION
+ * Gets the results from the server
+ *
+ * RETURN
+ * TRUE (1) in case of success or FALSE (0) otherwise
+ */
+int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
+    // Commands
+    std::string serverForceResults = _starJob.getServerDirectory("RemoteStar/results/Forces.csv");
+    std::string serverSimResults = _starJob.getServerDirectory("RemoteStar/results/MacroFinished.sim");
+    std::string clientResults = _starJob.getClientJobDirectory();
+
+    // Forces.csv
+    bool filesFetched = true;
+    secureCopy(_sshConnection, serverForceResults, clientResults, FROM_SERVER);
+    if(!fileExists(_starJob.getClientJobDirectory("Forces.csv"))){
+        std::cerr << "ERROR: Unable to fetch Forces.csv from server!" << std::endl;
+        filesFetched = false;
+    }
+
+    // Sim File
+    if(_starJob.getSaveSimFile()){
+        secureCopy(_sshConnection, serverSimResults, clientResults, FROM_SERVER);
+        if (!fileExists(_starJob.getClientJobDirectory("MacroFinished.sim"))){
+            std::cerr << "ERROR: Unable to fetch Sim File from server" << std::endl;
+            filesFetched = false;
+        }
+    }
+    return (filesFetched? TRUE : FALSE);
 }

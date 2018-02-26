@@ -1,5 +1,6 @@
 #BEGIN_STAR_JOB
-job_name         simulationCatita
-client_directory /home/nuno/Desktop/ClientStar
-server_directory /home/nuno/Desktop
+job_name         simCatita
+client_directory /home/nuno/Desktop/ClientStar/
+server_directory /home/nuno/Desktop/
+save_sim_file    no
 #END_STAR_JOB
