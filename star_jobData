@@ -1,0 +1,5 @@
+#BEGIN_STAR_JOB
+job_name         simulationCatita
+client_directory /home/nuno/Desktop/ClientStar
+server_directory /home/nuno/Desktop
+#END_STAR_JOB

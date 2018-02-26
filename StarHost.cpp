@@ -8,31 +8,30 @@
 /*
  * GETTERS
  */
-std::string StarHost::getAlias(int _iHost) {
-    return _alias[_iHost];
+std::string StarHost::getAlias(int _iHost) const {
+    return alias[_iHost];
 }
 
-std::string StarHost::getAddress(int _iHost) {
-    return _address[_iHost];
+std::string StarHost::getAddress(int _iHost) const {
+    return address[_iHost];
 }
 
-HostType StarHost::getHostType(int _iHost) {
-    return _hostType[_iHost];
+HostType StarHost::getHostType(int _iHost) const {
+    return hostType[_iHost];
 }
 
-int StarHost::getProcesses(int _iHost) {
-    return _processes[_iHost];
+int StarHost::getProcesses(int _iHost) const {
+    return processes[_iHost];
 }
 
-int StarHost::getNumHosts() {
-    return _nHosts;
+int StarHost::getNumHosts() const {
+    return nHosts;
 }
 
 /*
  * loadHostList()
  *
  * DESCRIPTION
- *
  * Loads the data for the class members from the file <star_hostList>
  * located in the folder .../StarClient/servers.
  *
@@ -72,14 +71,14 @@ void StarHost::loadHostList() {
                         throw "Missing alias in file <star_hostList>";
                     break;
                 case 2:
-                    _alias.insert(_alias.end(), word);
+                    alias.insert(alias.end(), word);
                     break;
                 case 3:
                     if(word != "address")
                         throw "Missing address in file <star_hostList>";
                     break;
                 case 4:
-                    _address.insert(_address.end(), word);
+                    address.insert(address.end(), word);
                     break;
                 case 5:
                     if(word != "type")
@@ -87,9 +86,9 @@ void StarHost::loadHostList() {
                     break;
                 case 6:
                     if(word == "localhost"){
-                        _hostType.insert(_hostType.end(), LOCALHOST);
+                        hostType.insert(hostType.end(), LOCALHOST);
                     } else if (word == "remote"){
-                        _hostType.insert(_hostType.end(), REMOTE_HOST);
+                        hostType.insert(hostType.end(), REMOTE_HOST);
                     } else {
                         throw "Missing or wrong host type in file <star_hostList>";
                     }
@@ -99,7 +98,7 @@ void StarHost::loadHostList() {
                         throw "Missing processes in file <star_hostList>";
                     break;
                 case 8:
-                    _processes.insert(_processes.end(), std::stoi(word));
+                    processes.insert(processes.end(), std::stoi(word));
                     break;
                 default:
                     throw "Wrong syntax in file <star_hostList>";
@@ -107,7 +106,7 @@ void StarHost::loadHostList() {
         }
         ++countHostWord;
     }
-    _nHosts = countHosts;
+    nHosts = countHosts;
     // Final check
     if(hostListFile.bad())
         throw "Cannot read file";
@@ -126,12 +125,12 @@ void StarHost::loadHostList() {
  * Required by iinitializeStarHost(StarHost& _starHost).
  */
 void StarHost::printHostList() {
-    size_t nHosts = _alias.size();
+    size_t nHosts = alias.size();
     std::cout << "\n:::::::::::: HOST LIST" << std::endl;
     for (int i = 0; i < nHosts; ++i) {
         std::cout << "       Host: " << getAlias(i) << std::endl;
         std::cout << "    Address: " << getAddress(i) << std::endl;
-        std::cout << "       Type: " << ((_hostType[i] == LOCALHOST) ? "localhost" : "remote host") << std::endl;
+        std::cout << "       Type: " << ((hostType[i] == LOCALHOST) ? "localhost" : "remote host") << std::endl;
         std::cout << "  Processes: " << getProcesses(i) << std::endl;
         if(nHosts > 1 && i < nHosts-1)
             std::cout << "------------ " << std::endl;

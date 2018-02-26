@@ -27,18 +27,18 @@ enum HostType {
 
 class StarHost {
 private:
-    std::vector<std::string> _alias;        // Host name
-    std::vector<std::string> _address;      // Host address
-    std::vector<HostType>    _hostType;     // localhost -> macro is sent to this host
-    std::vector<int>         _processes;    // Number of processes
-    int                      _nHosts;       // Number of hosts
+    std::vector<std::string> alias;        // Host name
+    std::vector<std::string> address;      // Host address
+    std::vector<HostType>    hostType;     // localhost -> macro is sent to this host
+    std::vector<int>         processes;    // Number of processes
+    int                      nHosts;       // Number of hosts
 public:
     // Getters for private members
-    std::string getAlias    (int _iHost);
-    std::string getAddress  (int _iHost);
-    HostType    getHostType (int _iHost);
-    int         getProcesses(int _iHost);
-    int         getNumHosts ();
+    std::string getAlias    (int _iHost) const;
+    std::string getAddress  (int _iHost) const;
+    HostType    getHostType (int _iHost) const;
+    int         getProcesses(int _iHost) const;
+    int         getNumHosts ()           const;
 
     // Class methods
     void loadHostList();

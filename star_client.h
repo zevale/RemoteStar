@@ -13,7 +13,8 @@
 #define STAR_CLIENT_H
 
 #include "SSH.h"        // Class SSH used to store ssh connection data
-#include "StarHost.h"   // Class used to store the host list fro parallel session
+#include "StarHost.h"   // Class used to store the host list for parallel session
+#include "StarJob.h"    // Class used to store STAR CCM+ job data
 
 // Linux support
 #ifdef linux
@@ -30,16 +31,16 @@ enum CopyDirection{
 // GENERAL FUNCTIONALITY
 
 // Print interpreted error message and exit
-void errorInterpreted(const char* _errorMessage);
+void errorInterpreted(const std::string& _errorMessage);
 
 // Print error message to std::cerr and exit
-void exitNow(std::string _errorMessage);
+void exitNow(const std::string& _errorMessage);
 
 // Change current directory
-void changeDirectory(std::string _workingDirectory);
+void changeWorkingDirectory(const std::string &_workingDirectory);
 
 // Get current working directory
-std::string getDirectory();
+std::string getWorkingDirectory();
 
 // Check if file exists in a directory
 bool fileExists(const std::string& _filePath);
@@ -63,23 +64,24 @@ char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray);
 /* Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
  * Must use an authentication key for automatic login.
  */
-int secureShell(SSH _sshConnection, char *_commandToExecute);
+int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute);
 
 /*
  * Execute screen instruction needed to start STAR CCM+ as an independent process
  * that keeps running in case of ssh connection failure.
  */
-int secureShellScreen(SSH _sshConnection, char *_commandToExecute);
+int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute);
 
 /* Execute SCP from client computer to SSH server.
  * Must use an authentication key.
  */
-int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath, CopyDirection _copyDirection);
+int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
+               const std::string& _destinationPath, CopyDirection _copyDirection);
 
 /* Loading screen while STAR CCM+ is loading.
  * A custom text message can be displayed line-by-line while the client is connecting to the server.
  */
-void loadingScreen(SSH _sshConnection);
+void loadingScreen(const SSH& _sshConnection);
 
 /*
  * Loads the SSH server data from file <star_sshServer> and initializes the _sshConnection
@@ -91,4 +93,9 @@ int initializeSSH(SSH& _sshConnection);
  * Will also probably need a StarMacro class that contains information about the macro file path
  */
 int initializeStarHost(StarHost& _starHost);
+
+/*
+ * Loads the job data file <star_jobData> required to run the STAR CCM+ simulation
+ */
+int initializeStarJob(StarJob& _starJob);
 #endif //SSH_H

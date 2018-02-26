@@ -29,19 +29,19 @@
 // GENERAL FUNCTIONALITY
 
 // Print interpreted error message and exit
-void errorInterpreted(const char* _errorMessage) {
-    perror(_errorMessage);
+void errorInterpreted(const std::string& _errorMessage) {
+    perror(_errorMessage.c_str());
     exit(EXIT_FAILURE);
 }
 
 // Print error message to std::cerr and exit
-void exitNow(std::string _errorMessage) {
+void exitNow(const std::string& _errorMessage) {
     std::cerr << _errorMessage << std::endl;
     exit(EXIT_FAILURE);
 }
 
 // Change current directory
-void changeDirectory(std::string _workingDirectory) {
+void changeWorkingDirectory(const std::string &_workingDirectory) {
 //    std::string workingDirectory;
 //    std::cout << "\nPlease enter working directory: " << std::endl;
 //    std::cin >> workingDirectory; std::cin.ignore();
@@ -52,7 +52,7 @@ void changeDirectory(std::string _workingDirectory) {
 }
 
 // Get current working directory
-std::string getDirectory() {
+std::string getWorkingDirectory() {
     char currentDirectory[MAX_PATH];
     memset(currentDirectory, '\0', MAX_PATH);
 #ifdef _WIN32
@@ -187,7 +187,7 @@ char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray)
  * RETURN
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
-int secureShell(SSH _sshConnection, char *_commandToExecute) {
+int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute) {
 #ifdef _WIN32
     // Get the ssh.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
@@ -196,12 +196,11 @@ int secureShell(SSH _sshConnection, char *_commandToExecute) {
     // Get the ssh module
     char moduleName[] = "/usr/bin/ssh";
 #endif
-    // Generate the ssh command
-    int commandArgsSize = 1024;
-    char commandArgs[commandArgsSize];
+    // Generate the ssh command assuming its maximum size is MAX_PATH*3
+    char commandArgs[MAX_PATH*3];
     memset(commandArgs, '\0', sizeof(commandArgs));
-    sprintf(commandArgs, "ssh -t %s@%s ""%s""", _sshConnection.getUser(), _sshConnection.getServer(),
-            _commandToExecute);
+    sprintf(commandArgs, "ssh -t %s@%s ""%s""", _sshConnection.getUser().c_str(), _sshConnection.getServer().c_str(),
+            _commandToExecute.c_str());
 
     // Message to user
     std::cout << "\n:::::::::::: SSH COMMAND" << std::endl;
@@ -209,7 +208,7 @@ int secureShell(SSH _sshConnection, char *_commandToExecute) {
 
     // Check if screen command
     bool screenConnect = false;
-    if(strncmp(_commandToExecute, (char *) "screen", 6) == 0)
+    if(strncmp(_commandToExecute.c_str(), (char *) "screen", 6) == 0)
         screenConnect = true;
     if(screenConnect)
         loadingScreen(_sshConnection);
@@ -247,7 +246,7 @@ int secureShell(SSH _sshConnection, char *_commandToExecute) {
  * RETURN
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
-int secureShellScreen(SSH _sshConnection, char *_commandToExecute) {
+int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute) {
 #ifdef _WIN32
     // Get the ssh.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
@@ -257,12 +256,11 @@ int secureShellScreen(SSH _sshConnection, char *_commandToExecute) {
     char moduleName[] = "/usr/bin/ssh";
 #endif
 
-    // Generate the scp command
-    int commandArgsSize = 1024;
-    char commandArgs[commandArgsSize];
+    // Generate the ssh command assuming its maximum size is MAX_PATH*3
+    char commandArgs[MAX_PATH*3];
     memset(commandArgs, '\0', sizeof(commandArgs));
-    sprintf(commandArgs, "ssh %s@%s ""%s""", _sshConnection.getUser(), _sshConnection.getServer(),
-            _commandToExecute);
+    sprintf(commandArgs, "ssh %s@%s ""%s""", _sshConnection.getUser().c_str(), _sshConnection.getServer().c_str(),
+            _commandToExecute.c_str());
 
     // Message to user
     std::cout << "\n:::::::::::: SSH SCREEN" << std::endl;
@@ -285,7 +283,8 @@ int secureShellScreen(SSH _sshConnection, char *_commandToExecute) {
  * RETURN
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
-int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath, CopyDirection _copyDirection) {
+int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
+               const std::string& _destinationPath, CopyDirection _copyDirection) {
 #ifdef _WIN32
     // Get the scp.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\scp.exe";
@@ -300,13 +299,13 @@ int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath
 
     // Check copy direction
     if(_copyDirection == TO_SERVER){
-        sprintf(commandArgs, "scp %s %s@%s:%s", _sourceFilePath, _sshConnection.getUser(),
-                _sshConnection.getServer(), _destinationPath);
+        sprintf(commandArgs, "scp %s %s@%s:%s", _sourceFilePath.c_str(), _sshConnection.getUser().c_str(),
+                _sshConnection.getServer().c_str(), _destinationPath.c_str());
         // Message to user
         std::cout << "\n:::::::::::: SENDING" << std::endl;
     } else {
-        sprintf(commandArgs, "scp %s@%s:%s %s", _sshConnection.getUser(),  _sshConnection.getServer(),
-                _sourceFilePath, _destinationPath);
+        sprintf(commandArgs, "scp %s@%s:%s %s", _sshConnection.getUser().c_str(),  _sshConnection.getServer().c_str(),
+                _sourceFilePath.c_str(), _destinationPath.c_str());
         // Message to user
         std::cout << "\n:::::::::::: RECEIVING" << std::endl;
     }
@@ -329,7 +328,7 @@ int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath
  * Loading screen while STAR CCM+ is loading.
  * A custom text message can be displayed line-by-line while the client is connecting to the server.
  */
-void loadingScreen(SSH _sshConnection){
+void loadingScreen(const SSH& _sshConnection){
     // Clear the console
 #ifdef _WIN32
     system("cls");
@@ -463,5 +462,33 @@ int initializeStarHost(StarHost& _starHost) {
 
     std::cout << "\n Press <enter> to continue..." << std::endl;
     std::cin.get();
+    return TRUE;
+}
+
+/*
+ * initializeStarJob()
+ *
+ * DESCRIPTION
+ * Loads the job data from file <star_jobData
+ *
+ * RETURN
+ * TRUE (1) in case of success or FALSE (0) otherwise
+ */
+int initializeStarJob(StarJob& _starJob) {
+    // Load job data
+    try {
+        _starJob.loadStarJob();
+    } catch(const char * loadJobException) {
+        // Error loading hosts from <star_hostList>
+        std::cerr << "ERROR: " << loadJobException << std::endl;
+        return FALSE;
+    }
+    // CHECK FILES: <star_sshServer> <star_hostList>
+
+    // Print job data
+    _starJob.printJobData();
+
+    // Change directory
+    changeWorkingDirectory(_starJob.getClientDirectory());
     return TRUE;
 }

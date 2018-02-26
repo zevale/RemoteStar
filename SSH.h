@@ -22,14 +22,14 @@
 
 class SSH {
 private:
-    std::string _alias;         // Name to identify the machine running the ssh server
-    std::string _serverSSH;     // Address of the machine running the ssh server
-    std::string _userSSH;       // SSH username
+    std::string alias;         // Name to identify the machine running the ssh server
+    std::string serverSSH;     // Address of the machine running the ssh server
+    std::string userSSH;       // SSH username
 public:
     // Getters
-    std::string getAlias();
-    char * getUser();
-    char * getServer();
+    std::string getAlias()  const;
+    std::string getUser()   const;
+    std::string getServer() const;
 
     // Class methods
     void loadSSH();

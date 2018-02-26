@@ -7,16 +7,16 @@
 /*
  * GETTERS
  */
-std::string SSH::getAlias() {
-    return _alias;
+std::string SSH::getAlias() const {
+    return alias;
 }
 
-char * SSH::getUser() {
-    return &_userSSH[0u];
+std::string SSH::getUser() const {
+    return userSSH;
 }
 
-char* SSH::getServer() {
-    return &_serverSSH[0u];
+std::string SSH::getServer() const {
+    return serverSSH;
 }
 
 /*
@@ -60,20 +60,20 @@ void SSH::loadSSH() {
                         throw "Missing alias in file <star_sshServer>";
                     break;
                 case 2:
-                    _alias = word;
+                    alias = word;
                     break;
                 case 3:
                     if(word != "address")
                         throw "Missing address in file <star_sshServer>";
                     break;
                 case 4:
-                    _serverSSH = word;
+                    serverSSH = word;
                     break;
                 case 5:
                     if(word != "user")
                         throw "Missing user in file <star_sshServer>";
                 case 6:
-                    _userSSH = word;
+                    userSSH = word;
                     break;
                 default:
                     throw "Wrong syntax in file <star_sshServer>";
@@ -99,6 +99,6 @@ void SSH::loadSSH() {
  */
 void SSH::printConnectionData() {
     std::cout << "\n:::::::::::: SSH CONNECTION to " << getAlias() << std::endl;
-    std::cout << "       USER: " << _userSSH << std::endl;
-    std::cout << "     SERVER: " << _serverSSH << std::endl;
+    std::cout << "       USER: " << userSSH << std::endl;
+    std::cout << "     SERVER: " << serverSSH << std::endl;
 }
