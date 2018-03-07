@@ -284,7 +284,7 @@ int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToEx
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
-               const std::string& _destinationPath, CopyDirection _copyDirection) {
+               const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOptions) {
 #ifdef _WIN32
     // Get the scp.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\scp.exe";
@@ -297,15 +297,22 @@ int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
     char commandArgs[MAX_PATH*3];
     memset(commandArgs, '\0', MAX_PATH*3);
 
+    // Check copy options
+    std::string scp("scp");
+    if(_copyOptions == COPY_FOLDER){
+        // Add recursive option
+        scp = scp + " -r";
+    }
+
     // Check copy direction
     if(_copyDirection == TO_SERVER){
-        sprintf(commandArgs, "scp %s %s@%s:%s", _sourceFilePath.c_str(), _sshConnection.getUser().c_str(),
+        sprintf(commandArgs, "%s %s %s@%s:%s", scp.c_str(), _sourceFilePath.c_str(), _sshConnection.getUser().c_str(),
                 _sshConnection.getServer().c_str(), _destinationPath.c_str());
         // Message to user
         std::cout << "\n:::::::::::: SENDING" << std::endl;
     } else {
-        sprintf(commandArgs, "scp %s@%s:%s %s", _sshConnection.getUser().c_str(),  _sshConnection.getServer().c_str(),
-                _sourceFilePath.c_str(), _destinationPath.c_str());
+        sprintf(commandArgs, "%s %s@%s:%s %s",scp.c_str(), _sshConnection.getUser().c_str(),
+                _sshConnection.getServer().c_str(), _sourceFilePath.c_str(), _destinationPath.c_str());
         // Message to user
         std::cout << "\n:::::::::::: RECEIVING" << std::endl;
     }
@@ -427,7 +434,7 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         std::string starInfiniBand = "-fabric IBV ";
         std::string starHost;
         std::string starMacro = " -batch ";
-        std::string macroPath = "/home/nuno/Desktop/RemoteStar/sim/MacroClean.java";
+        std::string macroPath = _starJob.getServerJobDirectory("resources/MightyMacro.java");
 
         // Generate host list
         int nHosts = _starHost.getNumHosts();
@@ -448,7 +455,7 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
                     starHost += ",";
             }
         }
-        // Output to file
+        // Output to file and close
         shellRunScriptFile << sheBang << std::endl;
         shellRunScriptFile << starPath << starLicense << starExit << starHost << starMacro << macroPath;
         shellRunScriptFile.close();
@@ -460,8 +467,8 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
     // Show host list
     _starHost.printHostList();
 
-    std::cout << "\n Press <enter> to continue..." << std::endl;
-    std::cin.get();
+//    std::cout << "\n Press <enter> to continue..." << std::endl;
+//    std::cin.get();
     return TRUE;
 }
 
@@ -496,7 +503,7 @@ int initializeStarJob(StarJob& _starJob) {
     // Check resources: <star_sshServer> <star_hostList>
 
     // Print job data
-    _starJob.printJobData();
+       _starJob.printJobData();
 
     // Change directory
     changeWorkingDirectory(_starJob.getClientDirectory());
@@ -510,46 +517,23 @@ int initializeStarJob(StarJob& _starJob) {
  * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
  */
 void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
-    // Set paths to source files and path to destination folder
-#ifdef _WIN32
-    std::string runStarSource = _starJob.getClientJobDirectory("resources\\star_runScript");
-    std::string macroSource = _starJob.getClientJobDirectory("resources\\MacroClean.java");
-    std::string domainGeometrySource = _starJob.getClientJobDirectory("resources/DomainGeometry.x_b");
-    std::string aircraftGeometrySource = _starJob.getClientJobDirectory("resources\\SurfMesh.stl");
-#endif
-#ifdef linux
-    std::string runStarSource = _starJob.getClientJobDirectory("resources/star_runScript");
-    std::string macroSource = _starJob.getClientJobDirectory("resources/MacroClean.java");
-    std::string domainGeometrySource = _starJob.getClientJobDirectory("resources/DomainGeometry.x_b");
-    std::string aircraftGeometrySource = _starJob.getClientJobDirectory("resources/SurfMesh.stl");
-#endif
-    std::string serverDestination = _starJob.getServerDirectory("RemoteStar/sim");
 
-    // SSH command: create RemoteStar folders
-    std::string createServerFolders = std::string("cd ") + _starJob.getServerDirectory() +
-                                      std::string(" && mkdir -p RemoteStar/sim && mkdir -p RemoteStar/results");
+    // SSH command: create job folder
+    std::string createServerFolders = "mkdir -p " + _starJob.getServerJobDirectory();
     secureShell(_sshConnection, createServerFolders);
 
-    // SCP file - shell script runStar
-    secureCopy(_sshConnection, runStarSource, serverDestination, TO_SERVER);
+    // SCP client resources folder
+    secureCopy(_sshConnection, _starJob.getClientJobDirectory("resources/"), _starJob.getServerJobDirectory(),
+               TO_SERVER, COPY_FOLDER);
 
-    // SCP file - macro MacroClean.java
-    secureCopy(_sshConnection, macroSource, serverDestination, TO_SERVER);
-
-    // SCP file - domain geometry
-    secureCopy(_sshConnection, domainGeometrySource, serverDestination, TO_SERVER);
-
-    // SCP file - aircraft geometry SurfMesh.stl
-    secureCopy(_sshConnection, aircraftGeometrySource, serverDestination, TO_SERVER);
-
-    // SSH command: set script permissions
-    std::string setScriptPermissions = std::string("cd ") + _starJob.getServerDirectory() +
-                                       std::string("RemoteStar/sim ") + std::string("&& chmod 775 star_runScript");
+    // SSH command: set script permissions on server
+    std::string setScriptPermissions = "cd " + _starJob.getServerJobDirectory("resources/") +
+            " && chmod 775 star_runScript";
     secureShell(_sshConnection, setScriptPermissions);
 
     // SSH command: run using screen  -d -m means new screen session in detached mode
-    std::string newScreenSession = std::string("screen -S starSession -d -m ") +
-                                   _starJob.getServerDirectory() + std::string("RemoteStar/sim/star_runScript");
+    std::string newScreenSession = "screen -S starSession -d -m " +
+            _starJob.getServerJobDirectory("resources/star_runScript");
     secureShellScreen(_sshConnection, newScreenSession);
 
     // Connect to screen to monitor
@@ -566,14 +550,11 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
-    // Commands
-    std::string serverForceResults = _starJob.getServerDirectory("RemoteStar/results/Forces.csv");
-    std::string serverSimResults = _starJob.getServerDirectory("RemoteStar/results/MacroFinished.sim");
-    std::string clientResults = _starJob.getClientJobDirectory();
 
     // Forces.csv
     bool filesFetched = true;
-    secureCopy(_sshConnection, serverForceResults, clientResults, FROM_SERVER);
+    secureCopy(_sshConnection, _starJob.getServerJobDirectory("Forces.csv"),
+               _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
     if(!fileExists(_starJob.getClientJobDirectory("Forces.csv"))){
         std::cerr << "ERROR: Unable to fetch Forces.csv from server!" << std::endl;
         filesFetched = false;
@@ -581,11 +562,19 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
 
     // Sim File
     if(_starJob.getSaveSimFile()){
-        secureCopy(_sshConnection, serverSimResults, clientResults, FROM_SERVER);
-        if (!fileExists(_starJob.getClientJobDirectory("MacroFinished.sim"))){
+        secureCopy(_sshConnection, _starJob.getServerJobDirectory(_starJob.getJobName() + ".sim"),
+                   _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
+        if (!fileExists(_starJob.getClientJobDirectory(_starJob.getJobName() + ".sim"))){
             std::cerr << "ERROR: Unable to fetch Sim File from server" << std::endl;
             filesFetched = false;
         }
     }
+
+    // Clean server only if files have been correctly fetched
+    if(_starJob.getCleanServer() && filesFetched){
+        secureShell(_sshConnection, "rm -r " + _starJob.getServerJobDirectory());
+        std::cerr << "\nNOTE: job folder deleted from server" << std::endl;
+    }
+
     return (filesFetched? TRUE : FALSE);
 }

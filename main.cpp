@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include "star_client.h"
+#include "MightyMacroMaker/MightyMacro.h"
 
 int main(int argc, char * argv[]) {
     // Assume there is a <star_jobData> file on the CWDirectory by default
@@ -24,6 +25,11 @@ int main(int argc, char * argv[]) {
     StarJob starJob(jobFilePath);
     if(!initializeStarJob(starJob))
         exitNow("TERMINATING: cannot load job data");
+
+    // Write Mighty Macro
+    MightyMacro mightyMacro(&starJob);
+    mightyMacro.writeMacro();
+
 
     // Connection to ssh server: initialize sshConnection
     SSH sshConnection;

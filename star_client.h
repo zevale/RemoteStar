@@ -25,7 +25,13 @@
 // When using scp the command syntax changes if copying from or to server
 enum CopyDirection{
     TO_SERVER = 0,
-    FROM_SERVER
+    FROM_SERVER,
+};
+
+// When using scp the commend syntax changes is copying a file or a folder
+enum CopyOptions{
+    COPY_FILE = 0,
+    COPY_FOLDER,
 };
 
 // GENERAL FUNCTIONALITY
@@ -76,7 +82,7 @@ int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToEx
  * Must use an authentication key.
  */
 int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
-               const std::string& _destinationPath, CopyDirection _copyDirection);
+               const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOption);
 
 /* Loading screen while STAR CCM+ is loading.
  * A custom text message can be displayed line-by-line while the client is connecting to the server.
