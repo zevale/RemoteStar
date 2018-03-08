@@ -1,0 +1,2 @@
+#!/bin/sh
+/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ -power -noexit -fabric IBV -on localhost:32,cfar-poseidon.me.uvic.ca:32 -batch /home/nuno/Desktop/RemoteStar/MacroClean.java

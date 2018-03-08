@@ -5,62 +5,77 @@
  * on a remote server and launches the simulation.
  *
  * Files are copied with scp and commands are sent with ssh.
- * This requires using Microsoft's native OpenSSH client.
+ * This requires using Microsoft's native OpenSSH client on
+ * windows machines.
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
  */
 
 #include <iostream>
+#include <cstring>
 #include "star_client.h"
+#include "MightyMacroMaker/MightyMacro.h"
 
-int main(int argc, char * argv[])
-{
-    // Initialize SSH and print connection data
+int main(int argc, char * argv[]) {
+    bool    batchModeOption = false;
+    std::string jobFilePath = "C:\\Users\\Nuno\\Dev\\RemoteStar\\star_jobData";
+    // Check command line arguments
+    switch(argc){
+        case 1:
+            // Default settings: batchMode (false), star_jobData in current working directory
+            break;
+        case 2:
+            if(!(strcmp(argv[1], "-batch"))){
+                // User provided -batch
+                batchModeOption = true;
+            } else {
+                // User provided a file path to star_jobData
+                jobFilePath = std::string(argv[1]);
+            }
+            break;
+        case 3:
+            // User provided an option and a file path to star_jobData
+            if(!(strcmp(argv[1], "-batch"))){
+                batchModeOption = true;
+                jobFilePath = std::string(argv[2]);
+                break;
+            }
+        default:
+            std::cout << ":::::::::::: RemoteStar\n";
+            std::cout << "Usage [job file path]\n";
+            std::cout << "      [-batch batch mode on] [job file path]" << std::endl;
+            return EXIT_FAILURE;
+    }
+
+    // Initialize starJob: get all relevant data for the sim
+    StarJob starJob(jobFilePath, batchModeOption);
+    if(!initializeStarJob(starJob))
+        exitNow("TERMINATING: cannot load job data");
+
+    // Initialize mighty macro using job data and write macro
+    MightyMacro mightyMacro(&starJob);
+    mightyMacro.writeMacro();
+
+
+    // Connection to ssh server: initialize sshConnection
     SSH sshConnection;
-    sshConnection.printConnectionData();
+    if(!initializeSSH(sshConnection))
+        exitNow("TERMINATING: SSH connection cannot be established");
 
-#ifdef _WIN32
-    char runStarSource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\runStar";
-    char macroSource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\MacroClean.java";
-    char domainGeometrySource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\DomainGeometry.x_b";
-    char aircraftGeometrySource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\SurfMesh.stl";
-#endif
-#ifdef linux
-    char runStarSource[] = "/home/nuno/Documents/RemoteStar/runStar";
-    char macroSource[] = "/home/nuno/Documents/RemoteStar/MacroClean.java";
-    char domainGeometrySource[] = "/home/nuno/Documents/RemoteStar/DomainGeometry.x_b";
-    char aircraftGeometrySource[] = "/home/nuno/Documents/RemoteStar/SurfMesh.stl";
-#endif
-    char serverDestination[] = "/home/nuno/Desktop/RemoteStar";
+    // STAR CCM+ hosts: initialize starHost and write <star_runScript>
+    StarHost starHost(batchModeOption);
+    if(!initializeStarHost(starHost, starJob))
+        exitNow("TERMINATING: cannot initialize hosts");
 
-    // SSH command: create RemoteStar folder
-    secureShell(sshConnection, (char *) "cd ~/Desktop && mkdir RemoteStar");
+    // Submit job
+    submitJob(sshConnection, starJob);
 
-    // SCP file - shell script runStar
-    secureCopy(sshConnection, runStarSource, serverDestination);
-
-    // SCP file - macro MacroClean.java
-    secureCopy(sshConnection, macroSource, serverDestination);
-
-    // SCP file - domain geometry
-    secureCopy(sshConnection, domainGeometrySource, serverDestination);
-
-    // SCP file - aircraft geometry SurfMesh.stl
-    secureCopy(sshConnection, aircraftGeometrySource, serverDestination);
-
-    // SSH command: set script permissions
-    secureShell(sshConnection, (char *) "cd /home/nuno/Desktop/RemoteStar && chmod 775 runStar");
-
-    // SSH command: run using screen  -d -m means new screen session in detached mode
-    secureShellScreen(sshConnection, (char *) "screen -S starSession -d -m /home/nuno/Desktop/RemoteStar/runStar");
-
-    // Connect to screen to monitor
-    secureShell(sshConnection, (char *) "screen -r starSession");
-
-    /* secureShell and secureCopy output eventual errors to cerr. These errors must be handled so that the simulation
-     * does not stop.
-     */
+    // Fetch results
+    if(!fetchResults(sshConnection, starJob))
+        exitNow("\nTERMINATING: error(s) while fetching results");
+    else
+        std::cout << ("\nFETCHED RESULTS FROM SERVER!") << std::endl;
 
     return EXIT_SUCCESS;
 }

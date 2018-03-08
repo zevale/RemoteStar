@@ -1,0 +1,5 @@
+#HOST
+alias Athena
+address cfar-athena.me.uvic.ca
+type localhost
+processes 32
