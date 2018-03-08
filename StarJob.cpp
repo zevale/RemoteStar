@@ -1,4 +1,5 @@
 #include "StarJob.h"
+#include "MightyMacroMaker/MightyConstants.h"
 
 #include <fstream>
 #include <iostream>
@@ -46,6 +47,18 @@ bool StarJob::getSaveSimFile() const{
 
 bool StarJob::getCleanServer() const {
     return cleanServer;
+}
+
+bool StarJob::getAutoSaveSimulation() const {
+    return autoSaveSimulation;
+}
+
+int StarJob::getNumAutoSaveFiles() const {
+    return numAutoSaveFiles;
+}
+
+int StarJob::getIterationInterval() const {
+    return iterationInterval;
 }
 
 std::vector<std::string> StarJob::getRegionName() const {
@@ -142,6 +155,11 @@ double StarJob::getAsymptoticCL() const {
  */
 StarJob::StarJob(const std::string& _jobFilePath){
     jobFilePath = _jobFilePath;
+
+    // Defaults: auto save
+    autoSaveSimulation = Default::autoSaveSimulation;
+    numAutoSaveFiles   = Default::numAutosaveFiles;
+    iterationInterval  = Default::iterationInterval;
 }
 
 /*
@@ -176,12 +194,15 @@ void StarJob::loadStarJob() {
     bool hasEndStarJob      = false;
 
     // Setup options
-    bool hasBeginJobSetup   = false;
-    bool hasJobName         = false;
-    bool hasClientDirectory = false;
-    bool hasServerDirectory = false;
-    bool hasSaveSimFile     = false;
-    bool hasCleanServer     = false;
+    bool hasBeginJobSetup      = false;
+    bool hasJobName            = false;
+    bool hasClientDirectory    = false;
+    bool hasServerDirectory    = false;
+    bool hasSaveSimFile        = false;
+    bool hasCleanServer        = false;
+    bool hasAutoSave           = false;
+    bool hasAutoSaveFiles      = false;
+    bool hasAutoSaveIterations = false;
 
     // Regions options
     bool hasBeginRegions  = false;
@@ -321,10 +342,44 @@ void StarJob::loadStarJob() {
                         throw "<clean_server> is empty";
                 }
 
+                // Check auto_save
+                if(hasBeginJobSetup && (word == "auto_save")){
+                    if(issLine >> word){
+                        if(word == "yes"){
+                            autoSaveSimulation = true;
+                            hasAutoSave = true;
+                        } else if(word == "no"){
+                            autoSaveSimulation = false;
+                            hasAutoSave = false;
+                        } else
+                            throw "usage <auto_save> yes/no";
+                    } else
+                        throw "<auto_save> is empty";
+                }
+
+                // Check auto_save_files
+                if(hasBeginJobSetup && (word == "auto_save_files")){
+                    if(issLine >> word){
+                        numAutoSaveFiles = std::stoi(word, nullptr);
+                        hasAutoSaveFiles = true;
+                    } else
+                        throw "<auto_save_files> is empty";
+                }
+
+                // Check auto_save_iterations
+                if(hasBeginJobSetup && (word == "auto_save_iterations")){
+                    if(issLine >> word){
+                        iterationInterval = std::stoi(word, nullptr);
+                        hasAutoSaveIterations = true;
+                    } else
+                        throw "<auto_save_iterations> is empty";
+                }
+
                 // Check #END_JOB_SETUP
                 if(hasBeginJobSetup && (word == "#END_JOB_SETUP")){
                     // Check if job setup data is complete
-                    if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer) {
+                    if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer
+                            && (hasAutoSave && hasAutoSaveFiles && hasAutoSaveIterations || !hasAutoSave)) {
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Job setup"
                                                        << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
                         // jobSetup complete
@@ -342,6 +397,10 @@ void StarJob::loadStarJob() {
                             throw "<save_sim_file> is missing";
                         if(!hasCleanServer)
                             throw "<clean_server> is missing";
+                        if(hasAutoSave && !hasAutoSaveFiles)
+                            throw "<auto_save_files> is missing";
+                        if(hasAutoSave && !hasAutoSaveIterations)
+                            throw "<auto_save_iterations> is missing";
                     }
                 }
             }
@@ -785,8 +844,14 @@ void StarJob::printJobData(){
     printTwoColumns(" SETUP", " ", '-');
     printTwoColumns("Client:", getClientJobDirectory());
     printTwoColumns("Server:", getServerJobDirectory());
-    printTwoColumns("Clean server:", getCleanServer()? "yes" : "no");
-    printTwoColumns("Download sim file:", getSaveSimFile()? "yes" : "no");
+    printTwoColumns("Clean server:", cleanServer? "yes" : "no");
+    printTwoColumns("Download sim file:", saveSimFile? "yes" : "no");
+    printTwoColumns(" Auto save:", autoSaveSimulation? "yes" : "no");
+    if(autoSaveSimulation){
+        printTwoColumns("Auto save files:", std::to_string(numAutoSaveFiles));
+        printTwoColumns("Iteration interval:", std::to_string(iterationInterval));
+    }
+
     std::cout << std::endl;
 
     printTwoColumns(" REGIONS", " ", '-');
@@ -807,7 +872,7 @@ void StarJob::printJobData(){
 #ifdef _WIN32
     system("cls");
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     system("clear");
 #endif
 }

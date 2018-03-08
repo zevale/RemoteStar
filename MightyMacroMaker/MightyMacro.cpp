@@ -15,22 +15,29 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Get ofstream object to be able to write the macro
     macroFile = openMightyMacroFile();
 
-    // Aircraft assignment (geometry file path)
-    aircraft = Aircraft(currentStarJob->getClientJobDirectory("resources/SurfMesh.stl"));
+    // Auto save assignment
+    autoSave = AutoSave(currentStarJob->getServerJobDirectory(currentStarJob->getJobName() + ".sim"),
+                        Default::autoSaveMesh,
+                        currentStarJob->getAutoSaveSimulation(),
+                        currentStarJob->getNumAutoSaveFiles(),
+                        currentStarJob->getIterationInterval());
 
-    // Domain assignment (geometry file path)
-    domain = Domain(currentStarJob->getClientJobDirectory("resources/DomainGeometry.x_b"));
+    // Aircraft assignment (geometry file path on the server)
+    aircraft = Aircraft(currentStarJob->getServerJobDirectory("resources/SurfMesh.stl"));
+
+    // Domain assignment (geometry file path on the server)
+    domain = Domain(currentStarJob->getServerJobDirectory("resources/DomainGeometry.x_b"));
 
     // MeshValues assignment (base size, prism layer, surface size)
-    meshValues = MeshValues( currentStarJob->getBaseSize(),
-                             // Prism layer with default config values and loaded data
+    meshValues = MeshValues(currentStarJob->getBaseSize(),
+                            // Prism layer with default config values and loaded data
                             {Default::boundaryMarchAngle,
                              Default::minimumThickness,
                              Default::layerChoppingPercentage,
                              currentStarJob->getPrismLayers(),
                              currentStarJob->getPrismLayerThickness(),
                              currentStarJob->getNearWallThickness()},
-                             currentStarJob->getSurfaceSize());
+                            currentStarJob->getSurfaceSize());
 
     // Physics values assignment (mach, viscosity, ref. pressure, static temp., flow direction, velocity components)
     physicsValues = PhysicsValues(currentStarJob->getMachNumber(),
@@ -71,10 +78,10 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                         currentStarJob->getNumSamples(),
                                         currentStarJob->getAsymptoticCL());
 
-    // Export results assignment (results file path)
+    // Export results assignment (results file path on the server)
     exportResults = ExportResults(currentStarJob->getServerJobDirectory("Forces.csv"));
 
-    // Close sim assignment (sim file path)
+    // Close sim assignment (sim file path on the server)
     closeSim = CloseSim(currentStarJob->getServerJobDirectory(currentStarJob->getJobName()) + ".sim");
 }
 
@@ -88,6 +95,7 @@ void MightyMacro::writeMacro() {
     writeImport();
     beginStarMacro();
     writeExecute();
+    writeAutoSave();
     writeAircraft();
     writeDomain();
     writeRegion();
@@ -149,6 +157,7 @@ void MightyMacro::writeExecute() {
     // Execute code
     code = {
             "    public void execute(){",
+            "        autoSaveSimulation();",
             "        importAircraftGeometry();",
             "        importDomainGeometry();",
             "        generateAirDomain();",
@@ -170,6 +179,10 @@ void MightyMacro::writeExecute() {
 
     // Write execute code to macro
     writeToFile(code);
+}
+
+void MightyMacro::writeAutoSave() {
+    writeToFile(autoSave.autoSaveCode());
 }
 
 void MightyMacro::writeAircraft() {

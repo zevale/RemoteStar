@@ -10,11 +10,11 @@
 #endif
 
 // Linux support
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
 #include <unistd.h>
 #include <spawn.h>              // Because of posix_spawn()
 #include <sys/wait.h>           // Because of waitpid()
-#include <linux/limits.h>       // Because of the constant MAX_PATH
+#include <climits>              // Because of the constant MAX_PATH
 #include <sstream>              // String stream classes
 #include <thread>               // To halt the thread while loadingScreen()
 #include <chrono>               // Because of miliseconds()
@@ -45,7 +45,7 @@ void changeWorkingDirectory(const std::string &_workingDirectory) {
 //    std::string workingDirectory;
 //    std::cout << "\nPlease enter working directory: " << std::endl;
 //    std::cin >> workingDirectory; std::cin.ignore();
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     if(chdir(_workingDirectory.c_str())<0)
         errorInterpreted("ERROR: cannot change directory");
 #endif
@@ -58,7 +58,7 @@ std::string getWorkingDirectory() {
 #ifdef _WIN32
     _getcwd(currentDirectory, MAX_PATH);
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     getcwd(currentDirectory, MAX_PATH);
 #endif
     return std::string(currentDirectory);
@@ -121,7 +121,7 @@ int executeProcess(char * _moduleName, char * _commandArgs) {
     CloseHandle(processInformation.hProcess);
     CloseHandle(processInformation.hThread);
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     pid_t processID;                                // Holds the child process ID
     int spawnStatus;                                // A nonzero number in case of error
 
@@ -163,7 +163,7 @@ int executeProcess(char * _moduleName, char * _commandArgs) {
  * RETURN
  * Spit arguments as char * const *
  */
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
 char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray)
 {
     size_t nArguments = _stringArray.size();                            // Number of arguments
@@ -192,7 +192,7 @@ int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
     // Get the ssh.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     // Get the ssh module
     char moduleName[] = "/usr/bin/ssh";
 #endif
@@ -220,7 +220,7 @@ int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
         return FALSE;
     }
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     // Check if it is a screen command
     if(screenConnect){
         // Use system()
@@ -251,7 +251,7 @@ int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToEx
     // Get the ssh.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     // Get the ssh module
     char moduleName[] = "/usr/bin/ssh";
 #endif
@@ -289,7 +289,7 @@ int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
     // Get the scp.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\scp.exe";
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     // Get the scp module
     char moduleName[] = "/usr/bin/scp";
 #endif
@@ -340,7 +340,7 @@ void loadingScreen(const SSH& _sshConnection){
 #ifdef _WIN32
     system("cls");
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     system("clear");
 #endif
     // Connecting to
@@ -349,7 +349,7 @@ void loadingScreen(const SSH& _sshConnection){
     Sleep(3000);
     system("cls");
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
     system("clear");
 #endif
@@ -359,18 +359,18 @@ void loadingScreen(const SSH& _sshConnection){
 #ifdef _WIN32
     textFile.open("C:\\Users\\Nuno\\Dev\\RemoteStar\\screen1");
 #endif
-#ifdef linux
-    textFile.open("/home/nuno/Dev/RemoteStar/screen1");
+#if defined(linux) || defined(__APPLE__)
+    textFile.open("./servers/screen1");
 #endif
     if(!textFile) {
-        std::cerr << "ERROR: cannot open loading screen" << std::endl;
+        return;
     } else {
         while(!textFile.eof()) {
             getline(textFile, buffer);
 #ifdef _WIN32
             Sleep(32);
 #endif
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
             std::this_thread::sleep_for(std::chrono::milliseconds(32));
 #endif
             std::cout << buffer << std::endl;

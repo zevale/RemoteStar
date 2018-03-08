@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) {
     if(!initializeStarJob(starJob))
         exitNow("TERMINATING: cannot load job data");
 
-    // Write Mighty Macro
+    // Initialize mighty macro using job data and write macro
     MightyMacro mightyMacro(&starJob);
     mightyMacro.writeMacro();
 

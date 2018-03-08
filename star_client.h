@@ -16,8 +16,8 @@
 #include "StarHost.h"   // Class used to store the host list for parallel session
 #include "StarJob.h"    // Class used to store STAR CCM+ job data
 
-// Linux support
-#ifdef linux
+// Linux ans Mac support
+#if defined(linux) || defined(__APPLE__)
 #include <vector>       // Linux systems require an additional function to parse arguments for spawn
 #include <unistd.h>     // To work with directories
 #endif
@@ -63,7 +63,7 @@ int executeProcess(char * _moduleName, char * _commandArgs);
  * Using spawn_posix() requires the command line arguments to be type char * const *.
  * strArrayToCharPtrConstPtr will convert the split arguments in a vector<string> into char * const *
  */
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
 char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray);
 #endif
 
@@ -114,4 +114,4 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob);
  * Gets the results from the server
  */
 int fetchResults(const SSH& _sshConnection, const StarJob& _starJob);
-#endif //SSH_H
+#endif // STAR_CLIENT_H

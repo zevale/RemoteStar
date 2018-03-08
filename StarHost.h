@@ -20,7 +20,6 @@
 #include <vector>
 #include <string>
 
-
 enum HostType {
     LOCALHOST=0,
     REMOTE_HOST,

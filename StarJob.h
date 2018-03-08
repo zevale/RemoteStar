@@ -30,6 +30,9 @@ private:
     std::string              serverDirectory;
     bool                     saveSimFile;
     bool                     cleanServer;
+    bool                     autoSaveSimulation;
+    int                      numAutoSaveFiles;
+    int                      iterationInterval;
 
     // Regions
     std::vector<std::string> regionName;
@@ -82,6 +85,9 @@ public:
     std::string              getServerJobDirectory(const std::string &_subPath) const;
     bool                     getSaveSimFile()                                   const;
     bool                     getCleanServer()                                   const;
+    bool                     getAutoSaveSimulation()                            const;
+    int                      getNumAutoSaveFiles()                              const;
+    int                      getIterationInterval()                             const;
     std::vector<std::string> getRegionName()                                    const;
     std::vector<std::string> getBoundaryCondition()                             const;
     double                   getBaseSize()                                      const;

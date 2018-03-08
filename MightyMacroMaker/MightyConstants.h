@@ -12,6 +12,13 @@ namespace Default{
     // ---------- GENERIC
     const char* const filePath = "empty_path";
     constexpr     int scalar   = 32;
+    constexpr    bool boolean  = false;
+
+    // ---------- AUTO SAVE
+    constexpr int  numAutosaveFiles   (0);
+    constexpr int  iterationInterval  (50);
+    constexpr bool autoSaveMesh       (true);
+    constexpr bool autoSaveSimulation (true);
 
     // ---------- PRISM LAYER MESH (STANDARD CONFIG AS PER SIEMENS RECOMMENDATIONS)
     constexpr double  boundaryMarchAngle      (85);

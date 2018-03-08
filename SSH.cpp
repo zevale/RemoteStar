@@ -1,4 +1,5 @@
 #include "SSH.h"
+#include "star_client.h"
 
 #include <iostream>
 #include <fstream>
