@@ -8,24 +8,28 @@
 
 class PhysicsValues {
 private:
-    double        machNumber;
-    double        dynamicViscosity;
-    double        referencePressure;
-    double        staticTemperature;
-    FlowDirection flowDirection;
-    Velocity      velocity;
+    double                   machNumber;
+    double                   dynamicViscosity;
+    double                   referencePressure;
+    double                   staticTemperature;
+    FlowDirection            flowDirection;
+    Velocity                 velocity;
+    std::vector<std::string> regionName;
+    std::vector<std::string> boundaryCondition;
 public:
     // Constructor
-    explicit PhysicsValues(double               _machNumber        =  Default::scalar,
-                           double               _dynamicViscosity  =  Default::scalar,
-                           double               _referencePressure =  Default::scalar,
-                           double               _staticTemperature =  Default::scalar,
-                           const FlowDirection& _flowDirection     = {Default::scalar,
-                                                                      Default::scalar,
-                                                                      Default::scalar},
-                           const Velocity&      _velocity          = {Default::scalar,
-                                                                      Default::scalar,
-                                                                      Default::scalar});
+    explicit PhysicsValues(double                          _machNumber        = Default::scalar,
+                           double                          _dynamicViscosity  = Default::scalar,
+                           double                          _referencePressure = Default::scalar,
+                           double                          _staticTemperature = Default::scalar,
+                           const FlowDirection&            _flowDirection     = {Default::scalar,
+                                                                                 Default::scalar,
+                                                                                 Default::scalar},
+                           const Velocity&                 _velocity          = {Default::scalar,
+                                                                                 Default::scalar,
+                                                                                 Default::scalar},
+                           const std::vector<std::string>& _regionName        = {},
+                           const std::vector<std::string>& _boundaryCondition = {});
 
     // Code generator
     std::vector<std::string> physicsValuesCode();

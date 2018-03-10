@@ -823,7 +823,7 @@ void StarJob::loadStarJob() {
 
     // CHECK REGION NAME AND SURFACE NAME ARE THE SAME
     if(regionName != surfaceName)
-        std::cerr << "ERROR: Region names and surface names are not the same" << std::endl;
+        throw "region names and surface names are not the same";
 }
 
 void StarJob::printTwoColumns(std::string _c1, std::string _c2) const {

@@ -438,7 +438,7 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         std::string sheBang = "#!/bin/sh\n";
         std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
         std::string starLicense = "-power ";
-        std::string starExit = "-noexit ";
+        std::string starExit = "";
         std::string starInfiniBand = "-fabric IBV ";
         std::string starHost;
         std::string starMacro = " -batch ";

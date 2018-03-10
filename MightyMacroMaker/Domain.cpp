@@ -1,8 +1,6 @@
 #include "Domain.h"
 
-Domain::Domain(const std::string & _geometryFilePath) {
-    geometryFilePath = _geometryFilePath;
-}
+Domain::Domain(const std::string& _geometryFilePath) : geometryFilePath (_geometryFilePath) {}
 
 std::vector<std::string> Domain::domainCode() {
     std::vector<std::string> code;

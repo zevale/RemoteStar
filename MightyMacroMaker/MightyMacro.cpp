@@ -1,4 +1,3 @@
-
 #include "MightyMacro.h"
 
 /*
@@ -25,10 +24,13 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Aircraft assignment (geometry file path on the server)
     aircraft = Aircraft(currentStarJob->getServerJobDirectory("resources/SurfMesh.stl"));
 
-    // Domain assignment (geometry file path on the server)
+    // Domain assignment (geometry file path on the server, region name, boundary condition)
     domain = Domain(currentStarJob->getServerJobDirectory("resources/DomainGeometry.x_b"));
 
-    // MeshValues assignment (base size, prism layer, surface size)
+    // Show domain assignment
+    showDomain = ShowDomain(currentStarJob->getRegionName());
+
+    // MeshValues assignment (base size, prism layer, surface size, region name, boundary conditions)
     meshValues = MeshValues(currentStarJob->getBaseSize(),
                             // Prism layer with default config values and loaded data
                             {Default::boundaryMarchAngle,
@@ -37,7 +39,10 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                              currentStarJob->getPrismLayers(),
                              currentStarJob->getPrismLayerThickness(),
                              currentStarJob->getNearWallThickness()},
-                            currentStarJob->getSurfaceSize());
+                            currentStarJob->getSurfaceSize(),
+                            // Region names and boundary conditions
+                            currentStarJob->getRegionName(),
+                            currentStarJob->getBoundaryCondition());
 
     // Physics values assignment (mach, viscosity, ref. pressure, static temp., flow direction, velocity components)
     physicsValues = PhysicsValues(currentStarJob->getMachNumber(),
@@ -51,7 +56,10 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                   // Velocity components computed from flow direction and reference velocity
                                   {(currentStarJob->getFlowDirectionX())*(currentStarJob->getReferenceVelocity()),
                                    (currentStarJob->getFlowDirectionY())*(currentStarJob->getReferenceVelocity()),
-                                   (currentStarJob->getFlowDirectionZ())*(currentStarJob->getReferenceVelocity())});
+                                   (currentStarJob->getFlowDirectionZ())*(currentStarJob->getReferenceVelocity())},
+                                  // Region names and boundary conditions
+                                  currentStarJob->getRegionName(),
+                                  currentStarJob->getBoundaryCondition());
 
     // Solver options assignment (CFL) (if not provided => CFL = 30/Mach)
     solverOptions = ((currentStarJob->getCustomSolverOptions())?
@@ -71,7 +79,9 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                         // ViewUp uses the standard configuration [c.f. MightyConstants.h]
                                         {Default::viewUpX, Default::viewUpY, Default::viewUpZ},
                                         // Normal uses the standard configuration [c.f. MightyConstants.h]
-                                        {Default::normalX, Default::normalY, Default::normalZ});
+                                        {Default::normalX, Default::normalY, Default::normalZ},
+                                        // Boundary condition
+                                        currentStarJob->getBoundaryCondition());
 
     // Stopping criteria assignment (maxSteps, number of samples for asymptotic convergence, asymptotic convergence)
     stoppingCriteria = StoppingCriteria(currentStarJob->getMaxSteps(),

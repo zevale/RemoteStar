@@ -25,7 +25,6 @@ add_executable(RemoteStar
         MightyMacroMaker/ExportResults.cpp
         MightyMacroMaker/Import.h
         MightyMacroMaker/Import.cpp
-        MightyMacroMaker/MacroEnum.h
         MightyMacroMaker/MeshContinuum.h
         MightyMacroMaker/MeshContinuum.cpp
         MightyMacroMaker/MeshValues.h

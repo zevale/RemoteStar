@@ -7,8 +7,12 @@
 
 class ShowDomain {
 private:
-    // Data on the domain parts goes here
+    std::vector<std::string> regionName;
+    std::vector<std::string> boundaryCondition;
 public:
+    // Constructor
+    explicit ShowDomain(const std::vector<std::string>& _regionName        = {});
+
     std::vector<std::string> showDomainCode();
 };
 
