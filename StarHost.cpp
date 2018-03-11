@@ -1,9 +1,19 @@
 #include "StarHost.h"
+#include "MightyMacroMaker/MightyConstants.h"
 
 #include <iostream>
 #include <vector>
 #include <string>
 #include <fstream>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
+/*
+ * Constructor
+ */
+StarHost::StarHost(bool _batchModeOption) : batchModeOption(_batchModeOption) {}
 
 /*
  * GETTERS
@@ -53,6 +63,10 @@ void StarHost::loadHostList() {
     if(!hostListFile.is_open())
         throw "Cannot open file <star_hostList>";
 
+    // Read <star_hostList> status
+    int numLocalhost = 0;
+
+    // Read <star_hostList>
     int countHostWord = 0;          // Counts host keywords
     int countHosts = 0;             // Counts number of hosts
     while(hostListFile >> word) {
@@ -86,7 +100,11 @@ void StarHost::loadHostList() {
                     break;
                 case 6:
                     if(word == "localhost"){
-                        hostType.insert(hostType.end(), LOCALHOST);
+                        if(numLocalhost == 0){
+                            hostType.insert(hostType.end(), LOCALHOST);
+                            ++numLocalhost;
+                        } else
+                            throw "There is more than one localhost in file <star_hostList>";
                     } else if (word == "remote"){
                         hostType.insert(hostType.end(), REMOTE_HOST);
                     } else {
@@ -106,10 +124,20 @@ void StarHost::loadHostList() {
         }
         ++countHostWord;
     }
-    nHosts = countHosts;
+    // Check data (8 fields but countHostWord is 9 after the while)
+    if(countHostWord != 9)
+        throw "Wrong syntax in <star_hostList>";
+
+    // Check for at least one localhost
+    if(!numLocalhost)
+        throw "No localhost in file <star_hostList>";
+
     // Final check
     if(hostListFile.bad())
         throw "Cannot read file <star_hostList>";
+
+    // Number of hosts
+    nHosts = countHosts;
 
     // Close file
     hostListFile.close();
@@ -122,17 +150,31 @@ void StarHost::loadHostList() {
  * Prints the host list in case the user wants to double check
  *
  * DEPENDENCIES
- * Required by iinitializeStarHost(StarHost& _starHost).
+ * Required by initializeStarHost(StarHost& _starHost).
  */
 void StarHost::printHostList() {
     size_t nHosts = alias.size();
     std::cout << "\n:::::::::::: HOST LIST" << std::endl;
     for (int i = 0; i < nHosts; ++i) {
-        std::cout << "       Host: " << getAlias(i) << std::endl;
-        std::cout << "    Address: " << getAddress(i) << std::endl;
+        std::cout << "       Host: " << alias[i] << std::endl;
+        std::cout << "    Address: " << address[i] << std::endl;
         std::cout << "       Type: " << ((hostType[i] == LOCALHOST) ? "localhost" : "remote host") << std::endl;
-        std::cout << "  Processes: " << getProcesses(i) << std::endl;
+        std::cout << "  Processes: " << processes[i] << std::endl;
         if(nHosts > 1 && i < nHosts-1)
             std::cout << "------------ " << std::endl;
+    }
+
+    // If batch mode, just wait Default::pauseTime, otherwise expect user input
+    if(!batchModeOption){
+        std::cout << "\n Press <enter> to continue..." << std::endl;
+        std::cin.get();
+    } else {
+#ifdef _WIN32
+        Sleep(Default::pauseTime);
+//        system("cls");
+#endif
+#if defined(linux) || defined(__APPLE__)
+//        system("clear");
+#endif
     }
 }

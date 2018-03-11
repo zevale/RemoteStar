@@ -1,5 +1,5 @@
 #include "CloseSim.h"
-CloseSim::CloseSim(const std::string &_simFilePath) : simFilePath(_simFilePath) {}
+CloseSim::CloseSim(const std::string& _simFilePath) : simFilePath(_simFilePath) {}
 
 std::vector<std::string> CloseSim::closeSimCode() {
     std::vector<std::string> code;
@@ -10,6 +10,8 @@ std::vector<std::string> CloseSim::closeSimCode() {
             "",
             "        // Data",
             "        String saveSimPath = \"" + simFilePath + ("\";"),
+            "",
+            "        // Save",
             "        activeSimulation.saveState(resolvePath(saveSimPath));",
             "    }"
     };

@@ -1,21 +1,24 @@
 #include "SolutionMonitors.h"
 #include "MightyMath.h"
 
-SolutionMonitors::SolutionMonitors(double               _referenceDensity,
-                                   double               _referenceVelocity,
-                                   const LiftDirection& _liftDirection,
-                                   const DragDirection& _dragDirection,
-                                   const ViewUp&        _viewUp,
-                                   const Normal&        _normal) :
+SolutionMonitors::SolutionMonitors(double                          _referenceDensity,
+                                   double                          _referenceVelocity,
+                                   const LiftDirection&            _liftDirection,
+                                   const DragDirection&            _dragDirection,
+                                   const ViewUp&                   _viewUp,
+                                   const Normal&                   _normal,
+                                   const std::vector<std::string>& _boundaryCondition) :
         referenceDensity (_referenceDensity),
         referenceVelocity(_referenceVelocity),
         liftDirection    (_liftDirection),
         dragDirection    (_dragDirection),
         viewUp           (_viewUp),
-        normal           (_normal) {}
+        normal           (_normal),
+        boundaryCondition(_boundaryCondition) {}
 
 std::vector<std::string> SolutionMonitors::solutionMonitorsCode() {
     std::vector<std::string> code;
+    std::vector<std::string> codeBuffer;
     code = {
             "",
             "    private void solutionMonitors(){",
@@ -56,8 +59,8 @@ std::vector<std::string> SolutionMonitors::solutionMonitorsCode() {
             "        // DRAG FORCE REPORT",
             "        ForceReport forceReportDrag = activeSimulation.getReportManager().createReport(ForceReport.class);",
             "        forceReportDrag.getDirection().setComponents(dragDirectionX, dragDirectionY, dragDirectionZ);",
-            "        forceReportLift.getParts().setQuery(null);",
-            "        forceReportLift.getParts().setObjects(boundaryAircraft);",
+            "        forceReportDrag.getParts().setQuery(null);",
+            "        forceReportDrag.getParts().setObjects(boundaryAircraft);",
             "        forceReportDrag.setPresentationName(\"Drag\");",
             "",
             "        // FRONTAL AREA REPORT - for force coefficients",
@@ -77,9 +80,22 @@ std::vector<std::string> SolutionMonitors::solutionMonitorsCode() {
             "        PartSurface partSurfaceAircraft = ((PartSurface) meshPartAircraft.getPartSurfaceManager().getPartSurface(\"Surface\"));",
             "        frontalAreaReportAircraft.getParts().setObjects(partSurfaceAircraft);",
             "        // Get the reference area",
-            "        double valueReferenceArea = frontalAreaReportAircraft.getReportMonitorValue();",
-            "        // ONLY BECAUSE WE ARE STUDYING HALF A WING",
-            "        valueReferenceArea = valueReferenceArea/2;",
+            "        double valueReferenceArea = frontalAreaReportAircraft.getReportMonitorValue();"
+    };
+
+    // Check for symmetry, in which case reference area is half
+    for(const std::string& currentBoundaryCondition : boundaryCondition){
+        if(currentBoundaryCondition == "symmetryPlane") {
+            codeBuffer = {
+                    "        // ONLY BECAUSE THE FLOW IS SYMMETRIC",
+                    "        valueReferenceArea = valueReferenceArea/2;"
+            };
+            code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+            break;
+        };
+    }
+
+    codeBuffer = {
             "        // OPTIONAL",
             "        frontalAreaReportAircraft.printReport();",
             "        frontalAreaReportAircraft.setPresentationName(\"AircraftArea\");",
@@ -97,7 +113,7 @@ std::vector<std::string> SolutionMonitors::solutionMonitorsCode() {
             "        forceCoefficientReportLift.getParts().setQuery(null);",
             "        forceCoefficientReportLift.getParts().setObjects(boundaryAircraft);",
             "        // OPTIONAL",
-            "        forceCoefficientReportLift.setPresentationName(\"CL\");"
+            "        forceCoefficientReportLift.setPresentationName(\"CL\");",
             "",
             "        // DRAG COEFFICIENT REPORT",
             "        ForceCoefficientReport forceCoefficientReportDrag = activeSimulation.getReportManager().createReport(ForceCoefficientReport.class);",
@@ -118,7 +134,7 @@ std::vector<std::string> SolutionMonitors::solutionMonitorsCode() {
             "        ReportMonitor reportMonitorLift = ((ReportMonitor) activeSimulation.getMonitorManager().getMonitor(\"Lift Monitor\"));",
             "        // Monitor: drag",
             "        activeSimulation.getMonitorManager().createMonitorAndPlot(new NeoObjectVector(new Object[] {forceReportDrag}), true, \"%1$s Plot\");",
-            "        ReportMonitor reportMonitorDrag = ((ReportMonitor) activeSimulation.getMonitorManager().getMonitor(\"Lift Monitor\"));",
+            "        ReportMonitor reportMonitorDrag = ((ReportMonitor) activeSimulation.getMonitorManager().getMonitor(\"Drag Monitor\"));",
             "        // Monitor: lift coefficient",
             "        activeSimulation.getMonitorManager().createMonitorAndPlot(new NeoObjectVector(new Object[] {forceCoefficientReportLift}), true, \"%1$s Plot\");",
             "        ReportMonitor reportMonitorCL = ((ReportMonitor) activeSimulation.getMonitorManager().getMonitor(\"CL Monitor\"));",
@@ -137,5 +153,7 @@ std::vector<std::string> SolutionMonitors::solutionMonitorsCode() {
             "        monitorPlotCD.open();",
             "    }",
     };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
     return code;
 }

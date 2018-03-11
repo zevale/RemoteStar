@@ -13,6 +13,8 @@ add_executable(RemoteStar
         StarHost.cpp
         star_client.h
         star_client.cpp
+        MightyMacroMaker/AutoSave.h
+        MightyMacroMaker/AutoSave.cpp
         MightyMacroMaker/Aircraft.h
         MightyMacroMaker/Aircraft.cpp
         MightyMacroMaker/CloseSim.h
@@ -23,7 +25,6 @@ add_executable(RemoteStar
         MightyMacroMaker/ExportResults.cpp
         MightyMacroMaker/Import.h
         MightyMacroMaker/Import.cpp
-        MightyMacroMaker/MacroEnum.h
         MightyMacroMaker/MeshContinuum.h
         MightyMacroMaker/MeshContinuum.cpp
         MightyMacroMaker/MeshValues.h

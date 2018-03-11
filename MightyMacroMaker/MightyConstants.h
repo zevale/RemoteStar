@@ -12,11 +12,26 @@ namespace Default{
     // ---------- GENERIC
     const char* const filePath = "empty_path";
     constexpr     int scalar   = 32;
+    constexpr    bool boolean  = false;
+
+    // ---------- PAUSE
+    constexpr int pauseTime = 3000; // Milliseconds
+
+    // ---------- JOB SETUP
+
+    // ---------- AUTO SAVE
+    constexpr int  numAutosaveFiles   (0);
+    constexpr int  iterationInterval  (50);
+    constexpr bool autoSaveMesh       (true);
+    constexpr bool autoSaveSimulation (true);
 
     // ---------- PRISM LAYER MESH (STANDARD CONFIG AS PER SIEMENS RECOMMENDATIONS)
     constexpr double  boundaryMarchAngle      (85);
     constexpr double  minimumThickness        (5);
     constexpr double  layerChoppingPercentage (10);
+
+    // ---------- NO PRISM LAYER BY DEFAULT
+    constexpr int zeroLayers(0);
 
     // ---------- SOLUTION MONITORS
 
@@ -30,4 +45,14 @@ namespace Default{
     constexpr double normalY (0);
     constexpr double normalZ (1);
 }
+
+namespace CrossPlatform {
+#ifdef _WIN32
+    const char* const separator = "\\";
+#endif
+#if defined(linux) || defined(__APPLE__)
+    const char* const separator = "/";
+#endif
+}
+
 #endif //MIGHTYCONSTANTS_H

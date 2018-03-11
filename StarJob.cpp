@@ -1,9 +1,19 @@
 #include "StarJob.h"
+#include "MightyMacroMaker/MightyConstants.h"
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
+#if defined(linux) || defined(__APPLE__)
+#include <thread>               // To halt the thread while loadingScreen()
+#include <chrono>               // Because of miliseconds()
+#endif
 
 /*
  * Getters
@@ -21,11 +31,11 @@ std::string StarJob::getClientDirectory() const {
 }
 
 std::string StarJob::getClientJobDirectory() const {
-    return (clientDirectory + jobName + std::string("/"));
+    return (clientDirectory + jobName + CrossPlatform::separator);
 }
 
 std::string StarJob::getClientJobDirectory(const std::string& _subPath) const {
-    return (clientDirectory + jobName + "/" + _subPath);
+    return (clientDirectory + jobName + CrossPlatform::separator + _subPath);
 }
 
 std::string StarJob::getServerDirectory() const {
@@ -46,6 +56,18 @@ bool StarJob::getSaveSimFile() const{
 
 bool StarJob::getCleanServer() const {
     return cleanServer;
+}
+
+bool StarJob::getAutoSaveSimulation() const {
+    return autoSaveSimulation;
+}
+
+int StarJob::getNumAutoSaveFiles() const {
+    return numAutoSaveFiles;
+}
+
+int StarJob::getIterationInterval() const {
+    return iterationInterval;
 }
 
 std::vector<std::string> StarJob::getRegionName() const {
@@ -140,9 +162,17 @@ double StarJob::getAsymptoticCL() const {
  * Constructor that sets the job file path assuming  <star_jobData>
  * is in the current directory by default
  */
-StarJob::StarJob(const std::string& _jobFilePath){
-    jobFilePath = _jobFilePath;
-}
+StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
+        jobFilePath(_jobFilePath),
+        batchModeOption(_batchMode),
+
+        // Auto save defaults (might not be assigned by user)
+        autoSaveSimulation(Default::autoSaveSimulation),
+        numAutoSaveFiles(Default::numAutosaveFiles),
+        iterationInterval(Default::iterationInterval),
+
+        // Prism layer defaults
+        prismLayers(Default::zeroLayers) {}
 
 /*
  * loadStarJob()
@@ -176,12 +206,15 @@ void StarJob::loadStarJob() {
     bool hasEndStarJob      = false;
 
     // Setup options
-    bool hasBeginJobSetup   = false;
-    bool hasJobName         = false;
-    bool hasClientDirectory = false;
-    bool hasServerDirectory = false;
-    bool hasSaveSimFile     = false;
-    bool hasCleanServer     = false;
+    bool hasBeginJobSetup      = false;
+    bool hasJobName            = false;
+    bool hasClientDirectory    = false;
+    bool hasServerDirectory    = false;
+    bool hasSaveSimFile        = false;
+    bool hasCleanServer        = false;
+    bool hasAutoSave           = false;
+    bool hasAutoSaveFiles      = false;
+    bool hasAutoSaveIterations = false;
 
     // Regions options
     bool hasBeginRegions  = false;
@@ -321,10 +354,44 @@ void StarJob::loadStarJob() {
                         throw "<clean_server> is empty";
                 }
 
+                // Check auto_save
+                if(hasBeginJobSetup && (word == "auto_save")){
+                    if(issLine >> word){
+                        if(word == "yes"){
+                            autoSaveSimulation = true;
+                            hasAutoSave = true;
+                        } else if(word == "no"){
+                            autoSaveSimulation = false;
+                            hasAutoSave = false;
+                        } else
+                            throw "usage <auto_save> yes/no";
+                    } else
+                        throw "<auto_save> is empty";
+                }
+
+                // Check auto_save_files
+                if(hasBeginJobSetup && (word == "auto_save_files")){
+                    if(issLine >> word){
+                        numAutoSaveFiles = std::stoi(word, nullptr);
+                        hasAutoSaveFiles = true;
+                    } else
+                        throw "<auto_save_files> is empty";
+                }
+
+                // Check auto_save_iterations
+                if(hasBeginJobSetup && (word == "auto_save_iterations")){
+                    if(issLine >> word){
+                        iterationInterval = std::stoi(word, nullptr);
+                        hasAutoSaveIterations = true;
+                    } else
+                        throw "<auto_save_iterations> is empty";
+                }
+
                 // Check #END_JOB_SETUP
                 if(hasBeginJobSetup && (word == "#END_JOB_SETUP")){
                     // Check if job setup data is complete
-                    if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer) {
+                    if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer
+                            && ((hasAutoSave && hasAutoSaveFiles && hasAutoSaveIterations) || !hasAutoSave)) {
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Job setup"
                                                        << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
                         // jobSetup complete
@@ -342,6 +409,10 @@ void StarJob::loadStarJob() {
                             throw "<save_sim_file> is missing";
                         if(!hasCleanServer)
                             throw "<clean_server> is missing";
+                        if(hasAutoSave && !hasAutoSaveFiles)
+                            throw "<auto_save_files> is missing";
+                        if(hasAutoSave && !hasAutoSaveIterations)
+                            throw "<auto_save_iterations> is missing";
                     }
                 }
             }
@@ -433,6 +504,11 @@ void StarJob::loadStarJob() {
                 if(hasBeginMeshModel && (word == "num_prism_layers")){
                     if(issLine >> word){
                         prismLayers = std::stoi(word, nullptr);
+
+                        // Check data
+                        if(prismLayers < 1)
+                            throw "<num_prism_layers> >= 1";
+
                         hasPrismLayers = true;
                     } else
                         throw "<num_prism_layers> is empty";
@@ -477,10 +553,12 @@ void StarJob::loadStarJob() {
                 // Check #END_MESH_MODEL tag
                 if(hasBeginMeshModel && (word == "#END_MESH_MODEL")){
                     // Check mesh model data is complete
-                    if(hasBaseSize &&
-                            hasPrismLayers         &&
-                            hasPrismLayerThickness &&
-                            hasNearWallThickness   &&
+                    if(     hasBaseSize
+                       &&
+                            // Has prism layer and options or no prism layer.
+                            ((hasPrismLayers && hasPrismLayerThickness && hasNearWallThickness) ||
+                             (!hasPrismLayers && !hasPrismLayerThickness && !hasNearWallThickness))
+                       &&
                             hasTwoSurfaceSizes){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Mesh model"
                                                        << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
@@ -489,12 +567,12 @@ void StarJob::loadStarJob() {
                         hasBeginMeshModel = false;
                     } else {
                         // Missing data
-                        if(!hasPrismLayers)
-                            throw "<num_prism_layers> is missing";
-                        if(!hasPrismLayerThickness)
+                        if(hasPrismLayers && !hasPrismLayerThickness)
                             throw "<prism_layer_thickness> is missing";
-                        if(!hasNearWallThickness)
+                        if(hasPrismLayers && !hasNearWallThickness)
                             throw "<near_wall_thickness> is missing";
+                        if(!hasPrismLayers && (hasPrismLayerThickness || hasNearWallThickness))
+                            throw "<num_prism_layers> is missing";
                         if(!hasTwoSurfaceSizes)
                             throw "needs at least two surface sizes";
                     }
@@ -760,7 +838,7 @@ void StarJob::loadStarJob() {
 
     // CHECK REGION NAME AND SURFACE NAME ARE THE SAME
     if(regionName != surfaceName)
-        std::cerr << "ERROR: Region names and surface names are not the same" << std::endl;
+        throw "region names and surface names are not the same";
 }
 
 void StarJob::printTwoColumns(std::string _c1, std::string _c2) const {
@@ -785,8 +863,13 @@ void StarJob::printJobData(){
     printTwoColumns(" SETUP", " ", '-');
     printTwoColumns("Client:", getClientJobDirectory());
     printTwoColumns("Server:", getServerJobDirectory());
-    printTwoColumns("Clean server:", getCleanServer()? "yes" : "no");
-    printTwoColumns("Download sim file:", getSaveSimFile()? "yes" : "no");
+    printTwoColumns("Clean server:", cleanServer? "yes" : "no");
+    printTwoColumns("Download sim file:", saveSimFile? "yes" : "no");
+    printTwoColumns(" Auto save:", autoSaveSimulation? "yes" : "no");
+    if(autoSaveSimulation){
+        printTwoColumns("Auto save files:", std::to_string(numAutoSaveFiles));
+        printTwoColumns("Iteration interval:", std::to_string(iterationInterval));
+    }
     std::cout << std::endl;
 
     printTwoColumns(" REGIONS", " ", '-');
@@ -796,18 +879,31 @@ void StarJob::printJobData(){
     }
     std::cout << std::endl;
 
-    printTwoColumns(" MESH", " ", '-');
-    printTwoColumns("Prism layers:", std::to_string(prismLayers));
-    printTwoColumns("PL thickness:", std::to_string(prismLayerThickness) + " m");
-    printTwoColumns("Near wall thickness:", std::to_string(nearWallThickness) + " m");
+    if(prismLayers > 0){
+        printTwoColumns(" MESH", " ", '-');
+        printTwoColumns("Prism layers:", std::to_string(prismLayers));
+        printTwoColumns("PL thickness:", std::to_string(prismLayerThickness) + " m");
+        printTwoColumns("Near wall thickness:", std::to_string(nearWallThickness) + " m");
+    }
 
-    std::cout << "\n Press <enter> to continue..." << std::endl;
-    std::cin.get();
-
+    // If batch mode, just wait Default::pauseTime, otherwise expect user input
+    if(!batchModeOption){
+        std::cout << "\n Press <enter> to continue..." << std::endl;
+        std::cin.get();
 #ifdef _WIN32
-    system("cls");
+        system("cls");
 #endif
 #if defined(linux) || defined(__APPLE__)
-    system("clear");
+        system("clear");
 #endif
+    } else {
+#ifdef _WIN32
+        Sleep(Default::pauseTime);
+        system("cls");
+#endif
+#if defined(linux) || defined(__APPLE__)
+        std::this_thread::sleep_for(std::chrono::milliseconds(Default::pauseTime));
+        system("clear");
+#endif
+    }
 }

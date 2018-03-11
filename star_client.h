@@ -16,7 +16,7 @@
 #include "StarHost.h"   // Class used to store the host list for parallel session
 #include "StarJob.h"    // Class used to store STAR CCM+ job data
 
-// Linux support
+// Linux ans Mac support
 #if defined(linux) || defined(__APPLE__)
 #include <vector>       // Linux systems require an additional function to parse arguments for spawn
 #include <unistd.h>     // To work with directories

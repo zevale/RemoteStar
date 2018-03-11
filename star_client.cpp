@@ -1,4 +1,5 @@
 #include "star_client.h"
+#include "MightyMacroMaker/MightyConstants.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -7,11 +8,12 @@
 // Windows support
 #ifdef _WIN32
 #include <Windows.h>
+#include <unistd.h>   // _chdir and _getcwd
 #endif
 
 // Linux support
 #if defined(linux) || defined(__APPLE__)
-#include <unistd.h>
+#include <unistd.h>             // chdir and _getcwd
 #include <spawn.h>              // Because of posix_spawn()
 #include <sys/wait.h>           // Because of waitpid()
 #include <climits>              // Because of the constant MAX_PATH
@@ -25,6 +27,7 @@
 #define FALSE 0
 #define MAX_PATH PATH_MAX
 #endif
+
 
 // GENERAL FUNCTIONALITY
 
@@ -45,6 +48,10 @@ void changeWorkingDirectory(const std::string &_workingDirectory) {
 //    std::string workingDirectory;
 //    std::cout << "\nPlease enter working directory: " << std::endl;
 //    std::cin >> workingDirectory; std::cin.ignore();
+#if _WIN32
+    if(_chdir(_workingDirectory.c_str())<0)
+        errorInterpreted("ERROR: cannot change directory");
+#endif
 #if defined(linux) || defined(__APPLE__)
     if(chdir(_workingDirectory.c_str())<0)
         errorInterpreted("ERROR: cannot change directory");
@@ -357,12 +364,14 @@ void loadingScreen(const SSH& _sshConnection){
     std::string buffer;
     std::ifstream textFile;
 #ifdef _WIN32
-    textFile.open("C:\\Users\\Nuno\\Dev\\RemoteStar\\screen1");
+    // Current working directory is Client Directory
+    textFile.open(".\\servers\\screen1");
 #endif
 #if defined(linux) || defined(__APPLE__)
     textFile.open("./servers/screen1");
 #endif
     if(!textFile) {
+        // There is no text to output
         return;
     } else {
         while(!textFile.eof()) {
@@ -419,18 +428,19 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         _starHost.loadHostList();
 
         // Write shell script to run simulation on hosts loaded
-        // Open file
-        std::ofstream shellRunScriptFile(_starJob.getClientJobDirectory("resources/star_runScript"));
+        // Open file in binary mode to avoid Windows adding \r on new lines
+        std::ofstream shellRunScriptFile(_starJob.getClientJobDirectory("resources" +
+                                      std::string(CrossPlatform::separator) + "star_runScript"), std::ios_base::binary);
 
         // Check if file is open
         if(!shellRunScriptFile)
             throw "Cannot write shell script <star_runScript>";
 
         // Initialize sheBang and STAR CCM+ command line arguments
-        std::string sheBang = "#!/bin/sh";
+        std::string sheBang = "#!/bin/sh\n";
         std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
         std::string starLicense = "-power ";
-        std::string starExit = "-noexit ";
+        std::string starExit = "";
         std::string starInfiniBand = "-fabric IBV ";
         std::string starHost;
         std::string starMacro = " -batch ";
@@ -456,8 +466,9 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
             }
         }
         // Output to file and close
-        shellRunScriptFile << sheBang << std::endl;
-        shellRunScriptFile << starPath << starLicense << starExit << starHost << starMacro << macroPath;
+        shellRunScriptFile.write(sheBang.c_str(), sheBang.size());
+        std::string runCommand(starPath + starLicense + starExit + starHost + starMacro + macroPath);
+        shellRunScriptFile.write(runCommand.c_str(), runCommand.size());
         shellRunScriptFile.close();
     } catch (const char* loadHostException) {
         // Error loading hosts from <star_hostList>
@@ -488,11 +499,14 @@ int initializeStarJob(StarJob& _starJob) {
         _starJob.loadStarJob();
 
         // Check aircraft geometry
-        if(!fileExists(_starJob.getClientJobDirectory("resources/SurfMesh.stl")))
+        std::string test = _starJob.getClientJobDirectory("resources" + std::string(CrossPlatform::separator)
+                                                          + "SurfMesh.stl");
+        if(!fileExists(test))
             throw "Aircraft geometry not found";
 
         // Check domain geometry
-        if(!fileExists(_starJob.getClientJobDirectory("resources/DomainGeometry.x_b")))
+        if(!fileExists(_starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)
+                                                      + "DomainGeometry.x_b")))
             throw "Domain geometry not found";
 
     } catch(const char * loadJobException) {
@@ -523,12 +537,12 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
     secureShell(_sshConnection, createServerFolders);
 
     // SCP client resources folder
-    secureCopy(_sshConnection, _starJob.getClientJobDirectory("resources/"), _starJob.getServerJobDirectory(),
-               TO_SERVER, COPY_FOLDER);
+    secureCopy(_sshConnection, _starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)),
+               _starJob.getServerJobDirectory(), TO_SERVER, COPY_FOLDER);
 
     // SSH command: set script permissions on server
-    std::string setScriptPermissions = "cd " + _starJob.getServerJobDirectory("resources/") +
-            " && chmod 775 star_runScript";
+    std::string setScriptPermissions =
+            "cd " + _starJob.getServerJobDirectory("resources/") + " && chmod 775 star_runScript";
     secureShell(_sshConnection, setScriptPermissions);
 
     // SSH command: run using screen  -d -m means new screen session in detached mode
@@ -550,6 +564,13 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
+    // Clear screen
+#ifdef _WIN32
+    system("cls");
+#endif
+#if defined(linux) || defined(__APPLE__)
+    system("clear");
+#endif
 
     // Forces.csv
     bool filesFetched = true;

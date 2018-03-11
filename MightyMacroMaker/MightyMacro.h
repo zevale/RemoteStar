@@ -17,6 +17,7 @@
 #include "MightyConstants.h"
 #include "../StarJob.h"
 #include "Import.h"
+#include "AutoSave.h"
 #include "Aircraft.h"
 #include "Domain.h"
 #include "MeshContinuum.h"
@@ -37,6 +38,7 @@ private:
 
     StarJob          *currentStarJob;
     Import           import;
+    AutoSave         autoSave;
     Aircraft         aircraft;
     Domain           domain;
     MeshContinuum    meshContinuum;
@@ -64,6 +66,7 @@ private:
     void          beginStarMacro();
     void          endStarMacro();
     void          writeExecute();
+    void          writeAutoSave();
     void          writeAircraft();
     void          writeDomain();
     void          writeRegion();

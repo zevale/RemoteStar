@@ -20,7 +20,6 @@
 #include <vector>
 #include <string>
 
-
 enum HostType {
     LOCALHOST=0,
     REMOTE_HOST,
@@ -28,12 +27,16 @@ enum HostType {
 
 class StarHost {
 private:
-    std::vector<std::string> alias;        // Host name
-    std::vector<std::string> address;      // Host address
-    std::vector<HostType>    hostType;     // localhost -> macro is sent to this host
-    std::vector<int>         processes;    // Number of processes
-    int                      nHosts;       // Number of hosts
+    bool                      batchModeOption;
+    std::vector<std::string> alias;            // Host name
+    std::vector<std::string> address;          // Host address
+    std::vector<HostType>    hostType;         // localhost -> macro is sent to this host
+    std::vector<int>         processes;        // Number of processes
+    int                      nHosts;           // Number of hosts
 public:
+    // Constructor
+    explicit StarHost(bool _batchModeOption = false);
+
     // Getters for private members
     std::string getAlias    (int _iHost) const;
     std::string getAddress  (int _iHost) const;
