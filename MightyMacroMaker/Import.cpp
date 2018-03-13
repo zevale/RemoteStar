@@ -1,6 +1,8 @@
 #include "Import.h"
 
-Import::Import(const PrismLayer& _prismLayer) : prismLayer(_prismLayer) {}
+Import::Import(const PrismLayer& _prismLayer, double _dynamicViscosity) :
+        prismLayer      (_prismLayer),
+        dynamicViscosity(_dynamicViscosity) {}
 
 std::vector<std::string> Import::importCode() {
     std::vector<std::string> code;
@@ -22,9 +24,9 @@ std::vector<std::string> Import::importCode() {
             "import star.common.*;",
             "import star.base.neo.*;",
             "import star.vis.*;",
-            "import star.meshing.*;",
             "",
             "// Mesh models",
+            "import star.meshing.*;",
             "import star.resurfacer.*;",
             "import star.dualmesher.*;",
             "import star.surfacewrapper.*;"
@@ -34,23 +36,32 @@ std::vector<std::string> Import::importCode() {
     if(prismLayer.numPrismLayers > 0)
         code.emplace_back("import star.prismmesher.*;");
 
+    // Physics (Inviscid)
     codeBuffer = {
             "",
             "// Physics",
-            "import star.turbulence.*;",
-            "import star.kwturb.*;",
             "import star.material.*;",
             "import star.flow.*;",
             "import star.coupledflow.*;",
-            "import star.metrics.*;",
             "import star.energy.*;",
-            "",
-            "// Material Properties",
-            "import star.material.*;",
+            "import star.metrics.*;",
+    };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
+    // Extra options for RANS
+    if(dynamicViscosity > 0){
+        codeBuffer = {
+                "import star.turbulence.*;",
+                "import star.kwturb.*;",
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
+    // Reports
+    codeBuffer = {
             "",
             "// Reports",
             "import star.base.report.*;",
-            ""
     };
     code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 

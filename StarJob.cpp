@@ -159,21 +159,33 @@ double StarJob::getAsymptoticCL() const {
     return asymptoticCL;
 }
 
+double StarJob::getAsymptoticCD() const {
+    return asymptoticCD;
+}
+
 /*
  * Constructor that sets the job file path assuming  <star_jobData>
  * is in the current directory by default
  */
 StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
-        jobFilePath(_jobFilePath),
+        jobFilePath    (_jobFilePath),
         batchModeOption(_batchMode),
 
         // Auto save defaults (might not be assigned by user)
         autoSaveSimulation(Default::autoSaveSimulation),
-        numAutoSaveFiles(Default::numAutosaveFiles),
-        iterationInterval(Default::iterationInterval),
+        numAutoSaveFiles  (Default::numAutosaveFiles),
+        iterationInterval (Default::iterationInterval),
 
         // Prism layer defaults
-        prismLayers(Default::zeroLayers) {}
+        prismLayers(Default::zeroLayers),
+
+        // Physics values defaults
+        dynamicViscosity(Default::dynamicViscosity),
+
+        // Stopping criteria defaults
+        numSamples  (Default::numSamples),
+        asymptoticCL(Default::asymptoticCL),
+        asymptoticCD(Default::asymptoticCD) {}
 
 /*
  * loadStarJob()
@@ -251,6 +263,7 @@ void StarJob::loadStarJob() {
     bool hasMaxSteps              = false;
     bool hasSamples               = false;
     bool hasAsymptotycCL          = false;
+    bool hasAsymptotycCD          = false;
 
     // Job status options
     bool jobSetup         = false;
@@ -681,8 +694,7 @@ void StarJob::loadStarJob() {
                 // Check #END_PHYSICS_MODEL
                 if(hasBeginPhysicsModel && (word == "#END_PHYSICS_MODEL")){
                     // Check physics model data is complete
-                    if(hasDynamicViscosity       &&
-                            hasStaticTemperature &&
+                    if(hasStaticTemperature      &&
                             hasReferencePressure &&
                             hasReferenceVelocity &&
                             hasReferenceDensity  &&
@@ -698,8 +710,6 @@ void StarJob::loadStarJob() {
                         hasBeginPhysicsModel = false;
                     } else{
                         // Missing data
-                        if(!hasDynamicViscosity)
-                            throw "<dynamic_viscosity> is missing";
                         if(!hasStaticTemperature)
                             throw "<static_temperature> is missing";
                         if(!hasReferencePressure)
@@ -800,10 +810,21 @@ void StarJob::loadStarJob() {
                         throw "<asymptotic_CL> is empty";
                 }
 
+                // Check asymptotic_CL
+                if(hasBeginStoppingCriteria && (word == "asymptotic_CD")){
+                    if(issLine >> word){
+                        asymptoticCD = std::stod(word, nullptr);
+                        hasAsymptotycCD = true;
+                    } else
+                        throw "<asymptotic_CD> is empty";
+                }
+
                 // Check #END_STOPPING_CRITERIA tag
                 if(hasBeginStoppingCriteria && (word == "#END_STOPPING_CRITERIA")){
                     // Check if stopping criteria data is complete
-                    if(hasMaxSteps && hasSamples && hasAsymptotycCL){
+                    if(hasMaxSteps &&
+                            // If has samples, it must have criteria for CL and/or CD
+                            ((hasSamples && (hasAsymptotycCL || hasAsymptotycCD)) || !hasSamples)){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Stopping criteria"
                                                        << std::right << std::setw(mediumColumn) << ".";
                         colorText("Loaded\n", GREEN);
@@ -813,10 +834,8 @@ void StarJob::loadStarJob() {
                     } else {
                         if(!hasMaxSteps)
                             throw "<max_steps> is missing";
-                        if(!hasSamples)
-                            throw "<num_samples> is missing";
-                        if(!hasAsymptotycCL)
-                            throw "<asymptotic_CL> is missing";
+                        if((hasSamples && (!hasAsymptotycCL || !hasAsymptotycCD)))
+                            throw "<asymptotic_CL> or <asymptotic_CD> is missing";
                     }
                 }
             }
@@ -867,6 +886,7 @@ void StarJob::printThreeColumns(std::string _c1, std::string _c2, std::string _c
 void StarJob::printJobData(){
     std::cout << "\n:::::::::::: JOB "; colorText(jobName + "\n\n", WHITE_BLUE);
 
+    // Job setup
     printTwoColumns(" SETUP", " ", '-');
     printTwoColumns("Client:", getClientJobDirectory());
     printTwoColumns("Server:", getServerJobDirectory());
@@ -879,6 +899,19 @@ void StarJob::printJobData(){
     }
     std::cout << std::endl;
 
+    // Physics data
+    printTwoColumns(" PHYSICS", " ", '-');
+    printTwoColumns("Type:", (dynamicViscosity > 0) ? "RANS" : "Inviscid");
+    printTwoColumns("Mach =", std::to_string(machNumber));
+    printTwoColumns("T (static) =", std::to_string(staticTemperature) + " K");
+    printTwoColumns("V (ref) =", std::to_string(referenceVelocity) + " m/s");
+    printTwoColumns("p (ref) =", std::to_string(referencePressure) + " Pa");
+    printTwoColumns("rho (ref) =", std::to_string(referenceDensity) + " kg/m3");
+    if(dynamicViscosity > 0)
+        printTwoColumns("mu (air) =", std::to_string(dynamicViscosity) + " Pa.s");
+    std::cout << std::endl;
+
+    // Region data
     printTwoColumns(" REGIONS", " ", '-');
     printThreeColumns("Region", "Boundary", "Surface Size");
     for(int i = 0; i < getRegionName().size(); i++){
@@ -886,6 +919,7 @@ void StarJob::printJobData(){
     }
     std::cout << std::endl;
 
+    // Prism layer data
     if(prismLayers > 0){
         printTwoColumns(" MESH", " ", '-');
         printTwoColumns("Prism layers:", std::to_string(prismLayers));

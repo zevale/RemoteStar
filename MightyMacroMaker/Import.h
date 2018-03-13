@@ -10,14 +10,11 @@
 class Import {
 private:
     PrismLayer prismLayer;
+    double     dynamicViscosity;
 public:
     // Constructor
-    explicit Import(const PrismLayer& _prismLayer = {Default::boundaryMarchAngle,
-                                                     Default::minimumThickness,
-                                                     Default::layerChoppingPercentage,
-                                                     Default::scalar,
-                                                     Default::scalar,
-                                                     Default::scalar});
+    explicit Import(const PrismLayer& _prismLayer       = {},
+                    double            _dynamicViscosity = {});
 
     std::vector<std::string> importCode();
 };

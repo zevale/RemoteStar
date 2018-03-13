@@ -20,7 +20,8 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                      Default::layerChoppingPercentage,
                      currentStarJob->getPrismLayers(),
                      currentStarJob->getPrismLayerThickness(),
-                     currentStarJob->getNearWallThickness()});
+                     currentStarJob->getNearWallThickness()},
+                    currentStarJob->getDynamicViscosity());
 
     // Auto save assignment
     autoSave = AutoSave(currentStarJob->getServerJobDirectory(currentStarJob->getJobName() + ".sim"),
@@ -42,6 +43,9 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                    currentStarJob->getPrismLayers(),
                                    currentStarJob->getPrismLayerThickness(),
                                    currentStarJob->getNearWallThickness()});
+
+    // Physics continuum assignment
+    physicsContinuum = PhysicsContinuum(currentStarJob->getDynamicViscosity());
 
     // Show domain assignment
     showDomain = ShowDomain(currentStarJob->getRegionName(),
@@ -103,10 +107,12 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Stopping criteria assignment (maxSteps, number of samples for asymptotic convergence, asymptotic convergence)
     stoppingCriteria = StoppingCriteria(currentStarJob->getMaxSteps(),
                                         currentStarJob->getNumSamples(),
-                                        currentStarJob->getAsymptoticCL());
+                                        currentStarJob->getAsymptoticCL(),
+                                        currentStarJob->getAsymptoticCD());
 
     // Export results assignment (results file path on the server)
-    exportResults = ExportResults(currentStarJob->getServerJobDirectory("Forces.csv"));
+    exportResults = ExportResults(currentStarJob->getServerJobDirectory("Forces.csv"),
+                                  currentStarJob->getDynamicViscosity());
 
     // Close sim assignment (sim file path on the server)
     closeSim = CloseSim(currentStarJob->getServerJobDirectory(currentStarJob->getJobName()) + ".sim");
@@ -162,6 +168,7 @@ void MightyMacro::writeImport() {
 void MightyMacro::beginStarMacro() {
     std::vector<std::string> code;
     code = {
+            "",
             "// StarMacro is implemented by STAR-CCM+",
             "public class MightyMacro extends StarMacro {",
     };

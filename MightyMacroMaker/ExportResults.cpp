@@ -1,9 +1,12 @@
 #include "ExportResults.h"
 
-ExportResults::ExportResults(const std::string& _resultsFilePath) : resultsFilePath(_resultsFilePath) {}
+ExportResults::ExportResults(const std::string& _resultsFilePath, double _dynamicViscosity) :
+        resultsFilePath(_resultsFilePath),
+        dynamicViscosity(_dynamicViscosity) {}
 
 std::vector<std::string> ExportResults::exportResultsCode() {
     std::vector<std::string> code;
+    std::vector<std::string> codeBuffer;
     code = {
             "",
             "    private void exportResults(){",
@@ -24,13 +27,24 @@ std::vector<std::string> ExportResults::exportResultsCode() {
             "        // Function definition and presentation name",
             "        forcePressureFieldFunction.setDefinition(\"${Pressure}*$${Area}\");",
             "        forcePressureFieldFunction.setPresentationName(\"Force (Pressure)\");",
-            "",
-            "        // Create ForceFriction field function",
-            "        UserFieldFunction forceFrictionFieldFunction = activeSimulation.getFieldFunctionManager().createFieldFunction();",
-            "        forceFrictionFieldFunction.getTypeOption().setSelected(FieldFunctionTypeOption.Type.VECTOR);",
-            "        forceFrictionFieldFunction.setFunctionName(\"ForceFriction\");",
-            "        forceFrictionFieldFunction.setDefinition(\"$${WallShearStress}*$$Area.mag()\");",
-            "        forcePressureFieldFunction.setPresentationName(\"Force (Friction)\");",
+    };
+
+    // Force friction
+    if(dynamicViscosity > 0) {
+        codeBuffer = {
+                "",
+                "        // Create ForceFriction field function",
+                "        UserFieldFunction forceFrictionFieldFunction = activeSimulation.getFieldFunctionManager().createFieldFunction();",
+                "        forceFrictionFieldFunction.getTypeOption().setSelected(FieldFunctionTypeOption.Type.VECTOR);",
+                "        forceFrictionFieldFunction.setFunctionName(\"ForceFriction\");",
+                "        forceFrictionFieldFunction.setDefinition(\"$${WallShearStress}*$$Area.mag()\");",
+                "        forcePressureFieldFunction.setPresentationName(\"Force (Friction)\");"
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
+    // ForceSum (= ForcePressure for inviscid, = ForcePressure + ForceFriction for RANS)
+    codeBuffer = {
             "",
             "        // Create ForceSum field function",
             "        UserFieldFunction forceSumFieldFunction = activeSimulation.getFieldFunctionManager().createFieldFunction();",
@@ -40,21 +54,21 @@ std::vector<std::string> ExportResults::exportResultsCode() {
             "        Units unitsPressure2 = ",
             "                activeSimulation.getUnitsManager().getPreferredUnits(new IntVector(new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));",
             "        // Function definition and presentation name",
-            "        forceSumFieldFunction.setDefinition(\"$${ForceFriction}+$${ForcePressure}\");",
+            "        forceSumFieldFunction.setDefinition(\"$${ForcePressure}" + std::string((dynamicViscosity > 0)? " + $${ForceFriction}" : "") + "\");",
             "        forceSumFieldFunction.setPresentationName(\"Force (Sum)\");",
             "",
             "        // Create XYZ Internal table",
             "        XyzInternalTable forceTable = activeSimulation.getTableManager().createTable(XyzInternalTable.class);",
             "",
             "        // Get all components",
-            "        VectorComponentFieldFunction xComponentForceSumFielFunction =",
+            "        VectorComponentFieldFunction xComponentForceSumFieldFunction =",
             "                ((VectorComponentFieldFunction) forceSumFieldFunction.getComponentFunction(0));",
-            "        VectorComponentFieldFunction yComponentForceSumFielFunction = ",
+            "        VectorComponentFieldFunction yComponentForceSumFieldFunction = ",
             "                ((VectorComponentFieldFunction) forceSumFieldFunction.getComponentFunction(1));",
-            "        VectorComponentFieldFunction zComponentForceSumFielFunction = ",
+            "        VectorComponentFieldFunction zComponentForceSumFieldFunction = ",
             "                ((VectorComponentFieldFunction) forceSumFieldFunction.getComponentFunction(2));",
             "        // Add field functions to the table",
-            "        forceTable.setFieldFunctions(new NeoObjectVector(new Object[] {xComponentForceSumFielFunction, yComponentForceSumFielFunction, zComponentForceSumFielFunction}));",
+            "        forceTable.setFieldFunctions(new NeoObjectVector(new Object[] {xComponentForceSumFieldFunction, yComponentForceSumFieldFunction, zComponentForceSumFieldFunction}));",
             "",
             "        // Select parts for the table (aircraft)",
             "        forceTable.getParts().setQuery(null);",
@@ -73,5 +87,7 @@ std::vector<std::string> ExportResults::exportResultsCode() {
             "        forceTable.export(saveForcesPath , \",\");",
             "    }"
     };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
     return code;
 }
