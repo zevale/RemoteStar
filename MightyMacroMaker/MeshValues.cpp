@@ -1,6 +1,5 @@
 #include "MeshValues.h"
 #include "MightyMath.h"
-#include "MightyConstants.h"
 
 #include <iostream>
 
@@ -29,18 +28,22 @@ std::vector<std::string> MeshValues::meshValuesCode(){
             "        double valueBaseSize                = " + javaScientific(baseSize) + ";"
     };
 
+
     // Prism layer data
-    codeBuffer = {
-            "",
-            "        // Prism layer",
-            "        double valueBoundaryMarchAngle      = " + javaScientific(prismLayer.boundaryMarchAngle) + ";",
-            "        double valueMinimumThickness        = " + javaScientific(prismLayer.minimumThickness) + ";",
-            "        double valueLayerChoppingPercentage = " + javaScientific(prismLayer.layerChoppingPercentage) + ";",
-            "        int    valueNumPrismLayers          = " + std::to_string(prismLayer.numPrismLayers) + ";",
-            "        double valuePrismLayerThickness     = " + javaScientific(prismLayer.prismLayerThickness) + ";",
-            "        double valueNearWallThickness       = " + javaScientific(prismLayer.nearWallThickness) + ";"
-    };
-    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    if(prismLayer.numPrismLayers > 0){
+        codeBuffer = {
+                "",
+                "        // Prism layer",
+                "        double valueBoundaryMarchAngle      = " + javaScientific(prismLayer.boundaryMarchAngle) + ";",
+                "        double valueMinimumThickness        = " + javaScientific(prismLayer.minimumThickness) + ";",
+                "        double valueLayerChoppingPercentage = " + javaScientific(prismLayer.layerChoppingPercentage) + ";",
+                "        int    valueNumPrismLayers          = " + std::to_string(prismLayer.numPrismLayers) + ";",
+                "        double valuePrismLayerThickness     = " + javaScientific(prismLayer.prismLayerThickness) + ";",
+                "        double valueNearWallThickness       = " + javaScientific(prismLayer.nearWallThickness) + ";"
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
 
     // Surface sizing
     codeBuffer = {
@@ -82,25 +85,27 @@ std::vector<std::string> MeshValues::meshValuesCode(){
     code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
     // Prism mesher
-    codeBuffer = {
-            "",
-            "        // PRISM MESHER",
-            "        // Model",
-            "        PrismMesherModel prismMesherModelObj = meshContinuumObj.getModelManager().getModel(PrismMesherModel.class);",
-            "        prismMesherModelObj.setBoundaryMarchAngle(valueBoundaryMarchAngle);",
-            "        prismMesherModelObj.setMinimumThickness(valueMinimumThickness);",
-            "        prismMesherModelObj.setLayerChoppingPercentage(valueLayerChoppingPercentage);",
-            "        prismMesherModelObj.getPrismStretchingOption().setSelected(PrismStretchingOption.Type.WALL_THICKNESS);",
-            "        // Number of prism layers",
-            "        NumPrismLayers numPrismLayersObj = meshContinuumObj.getReferenceValues().get(NumPrismLayers.class);",
-            "        numPrismLayersObj.setNumLayers(valueNumPrismLayers);",
-            "        // Prism layer thickness and near wall thickness",
-            "        PrismThickness prismThicknessObj = meshContinuumObj.getReferenceValues().get(PrismThickness.class);",
-            "        prismThicknessObj.getRelativeOrAbsoluteOption().setSelected(RelativeOrAbsoluteOption.Type.ABSOLUTE);",
-            "        ((ScalarPhysicalQuantity) prismThicknessObj.getAbsoluteSizeValue()).setValue(valuePrismLayerThickness);",
-            "        meshContinuumObj.getReferenceValues().get(PrismWallThickness.class).setValue(valueNearWallThickness);"
-    };
-    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    if(prismLayer.numPrismLayers > 0){
+        codeBuffer = {
+                "",
+                "        // PRISM MESHER",
+                "        // Model",
+                "        PrismMesherModel prismMesherModelObj = meshContinuumObj.getModelManager().getModel(PrismMesherModel.class);",
+                "        prismMesherModelObj.setBoundaryMarchAngle(valueBoundaryMarchAngle);",
+                "        prismMesherModelObj.setMinimumThickness(valueMinimumThickness);",
+                "        prismMesherModelObj.setLayerChoppingPercentage(valueLayerChoppingPercentage);",
+                "        prismMesherModelObj.getPrismStretchingOption().setSelected(PrismStretchingOption.Type.WALL_THICKNESS);",
+                "        // Number of prism layers",
+                "        NumPrismLayers numPrismLayersObj = meshContinuumObj.getReferenceValues().get(NumPrismLayers.class);",
+                "        numPrismLayersObj.setNumLayers(valueNumPrismLayers);",
+                "        // Prism layer thickness and near wall thickness",
+                "        PrismThickness prismThicknessObj = meshContinuumObj.getReferenceValues().get(PrismThickness.class);",
+                "        prismThicknessObj.getRelativeOrAbsoluteOption().setSelected(RelativeOrAbsoluteOption.Type.ABSOLUTE);",
+                "        ((ScalarPhysicalQuantity) prismThicknessObj.getAbsoluteSizeValue()).setValue(valuePrismLayerThickness);",
+                "        meshContinuumObj.getReferenceValues().get(PrismWallThickness.class).setValue(valueNearWallThickness);"
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
 
     // Boundary conditions
     codeBuffer = {

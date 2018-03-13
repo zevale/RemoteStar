@@ -14,6 +14,14 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Get ofstream object to be able to write the macro
     macroFile = openMightyMacroFile();
 
+    // Import assignment
+    import = Import({Default::boundaryMarchAngle,
+                     Default::minimumThickness,
+                     Default::layerChoppingPercentage,
+                     currentStarJob->getPrismLayers(),
+                     currentStarJob->getPrismLayerThickness(),
+                     currentStarJob->getNearWallThickness()});
+
     // Auto save assignment
     autoSave = AutoSave(currentStarJob->getServerJobDirectory(currentStarJob->getJobName() + ".sim"),
                         Default::autoSaveMesh,
@@ -27,8 +35,17 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Domain assignment (geometry file path on the server, region name, boundary condition)
     domain = Domain(currentStarJob->getServerJobDirectory("resources/DomainGeometry.x_b"));
 
+    // Mesh continuum assignment (prism layer)
+    meshContinuum = MeshContinuum({Default::boundaryMarchAngle,
+                                   Default::minimumThickness,
+                                   Default::layerChoppingPercentage,
+                                   currentStarJob->getPrismLayers(),
+                                   currentStarJob->getPrismLayerThickness(),
+                                   currentStarJob->getNearWallThickness()});
+
     // Show domain assignment
-    showDomain = ShowDomain(currentStarJob->getRegionName());
+    showDomain = ShowDomain(currentStarJob->getRegionName(),
+                            currentStarJob->getBoundaryCondition());
 
     // MeshValues assignment (base size, prism layer, surface size, region name, boundary conditions)
     meshValues = MeshValues(currentStarJob->getBaseSize(),

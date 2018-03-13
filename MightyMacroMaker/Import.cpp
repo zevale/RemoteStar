@@ -1,6 +1,10 @@
 #include "Import.h"
+
+Import::Import(const PrismLayer& _prismLayer) : prismLayer(_prismLayer) {}
+
 std::vector<std::string> Import::importCode() {
     std::vector<std::string> code;
+    std::vector<std::string> codeBuffer;
 
     // Imports required for the MightyMacro
     code = {
@@ -23,9 +27,15 @@ std::vector<std::string> Import::importCode() {
             "// Mesh models",
             "import star.resurfacer.*;",
             "import star.dualmesher.*;",
-            "import star.prismmesher.*;",
             "import star.surfacewrapper.*;"
-                    "",
+    };
+
+    // Prism mesher
+    if(prismLayer.numPrismLayers > 0)
+        code.emplace_back("import star.prismmesher.*;");
+
+    codeBuffer = {
+            "",
             "// Physics",
             "import star.turbulence.*;",
             "import star.kwturb.*;",
@@ -42,5 +52,7 @@ std::vector<std::string> Import::importCode() {
             "import star.base.report.*;",
             ""
     };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
     return code;
 }

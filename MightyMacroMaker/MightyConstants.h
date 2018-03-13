@@ -30,6 +30,9 @@ namespace Default{
     constexpr double  minimumThickness        (5);
     constexpr double  layerChoppingPercentage (10);
 
+    // ---------- NO PRISM LAYER BY DEFAULT
+    constexpr int zeroLayers(0);
+
     // ---------- SOLUTION MONITORS
 
     // ViewUp is along fuselage (X)

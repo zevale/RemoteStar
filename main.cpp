@@ -18,8 +18,8 @@
 #include "MightyMacroMaker/MightyMacro.h"
 
 int main(int argc, char * argv[]) {
-    bool    batchModeOption = false;
-    std::string jobFilePath = "C:\\Users\\Nuno\\Dev\\RemoteStar\\star_jobData";
+    bool         batchModeOption = false;
+    std::string jobFilePath      = "C:\\Users\\Nuno\\Dev\\RemoteStar\\star_jobData";
     // Check command line arguments
     switch(argc){
         case 1:
@@ -48,6 +48,7 @@ int main(int argc, char * argv[]) {
             return EXIT_FAILURE;
     }
 
+
     // Initialize starJob: get all relevant data for the sim
     StarJob starJob(jobFilePath, batchModeOption);
     if(!initializeStarJob(starJob))
@@ -57,25 +58,25 @@ int main(int argc, char * argv[]) {
     MightyMacro mightyMacro(&starJob);
     mightyMacro.writeMacro();
 
-//
-//    // Connection to ssh server: initialize sshConnection
-//    SSH sshConnection;
-//    if(!initializeSSH(sshConnection))
-//        exitNow("TERMINATING: SSH connection cannot be established");
-//
-//    // STAR CCM+ hosts: initialize starHost and write <star_runScript>
-//    StarHost starHost(batchModeOption);
-//    if(!initializeStarHost(starHost, starJob))
-//        exitNow("TERMINATING: cannot initialize hosts");
-//
-//    // Submit job
-//    submitJob(sshConnection, starJob);
-//
-//    // Fetch results
-//    if(!fetchResults(sshConnection, starJob))
-//        exitNow("\nTERMINATING: error(s) while fetching results");
-//    else
-//        std::cout << ("\nFETCHED RESULTS FROM SERVER!") << std::endl;
+
+    // Connection to ssh server: initialize sshConnection
+    SSH sshConnection;
+    if(!initializeSSH(sshConnection))
+        exitNow("TERMINATING: SSH connection cannot be established");
+
+    // STAR CCM+ hosts: initialize starHost and write <star_runScript>
+    StarHost starHost(batchModeOption);
+    if(!initializeStarHost(starHost, starJob))
+        exitNow("TERMINATING: cannot initialize hosts");
+
+    // Submit job
+    submitJob(sshConnection, starJob);
+
+    // Fetch results
+    if(!fetchResults(sshConnection, starJob))
+        exitNow("\nTERMINATING: error(s) while fetching results");
+    else
+        colorText("FETCHED RESULTS FROM SERVER!\n", GREEN);
 
     return EXIT_SUCCESS;
 }

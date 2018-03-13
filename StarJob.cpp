@@ -1,5 +1,6 @@
 #include "StarJob.h"
 #include "MightyMacroMaker/MightyConstants.h"
+#include "star_client.h"
 
 #include <fstream>
 #include <iostream>
@@ -8,6 +9,11 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#endif
+
+#if defined(linux) || defined(__APPLE__)
+#include <thread>               // To halt the thread while loadingScreen()
+#include <chrono>               // Because of miliseconds()
 #endif
 
 /*
@@ -164,7 +170,10 @@ StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
         // Auto save defaults (might not be assigned by user)
         autoSaveSimulation(Default::autoSaveSimulation),
         numAutoSaveFiles(Default::numAutosaveFiles),
-        iterationInterval(Default::iterationInterval) {}
+        iterationInterval(Default::iterationInterval),
+
+        // Prism layer defaults
+        prismLayers(Default::zeroLayers) {}
 
 /*
  * loadStarJob()
@@ -383,9 +392,10 @@ void StarJob::loadStarJob() {
                 if(hasBeginJobSetup && (word == "#END_JOB_SETUP")){
                     // Check if job setup data is complete
                     if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer
-                            && (hasAutoSave && hasAutoSaveFiles && hasAutoSaveIterations || !hasAutoSave)) {
+                            && ((hasAutoSave && hasAutoSaveFiles && hasAutoSaveIterations) || !hasAutoSave)) {
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Job setup"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // jobSetup complete
                         jobSetup = true;
                         hasBeginJobSetup = false;
@@ -456,7 +466,8 @@ void StarJob::loadStarJob() {
                     // Check if regions data is complete
                     if(hasOneWall && hasOneFreeStream){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Regions"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // regions setup complete
                         regions = true;
                         hasBeginRegions = false;
@@ -496,6 +507,11 @@ void StarJob::loadStarJob() {
                 if(hasBeginMeshModel && (word == "num_prism_layers")){
                     if(issLine >> word){
                         prismLayers = std::stoi(word, nullptr);
+
+                        // Check data
+                        if(prismLayers < 1)
+                            throw "<num_prism_layers> >= 1";
+
                         hasPrismLayers = true;
                     } else
                         throw "<num_prism_layers> is empty";
@@ -540,24 +556,27 @@ void StarJob::loadStarJob() {
                 // Check #END_MESH_MODEL tag
                 if(hasBeginMeshModel && (word == "#END_MESH_MODEL")){
                     // Check mesh model data is complete
-                    if(hasBaseSize &&
-                            hasPrismLayers         &&
-                            hasPrismLayerThickness &&
-                            hasNearWallThickness   &&
+                    if(     hasBaseSize
+                       &&
+                            // Has prism layer and options or no prism layer.
+                            ((hasPrismLayers && hasPrismLayerThickness && hasNearWallThickness) ||
+                             (!hasPrismLayers && !hasPrismLayerThickness && !hasNearWallThickness))
+                       &&
                             hasTwoSurfaceSizes){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Mesh model"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // mesh model complete
                         meshModel = true;
                         hasBeginMeshModel = false;
                     } else {
                         // Missing data
-                        if(!hasPrismLayers)
-                            throw "<num_prism_layers> is missing";
-                        if(!hasPrismLayerThickness)
+                        if(hasPrismLayers && !hasPrismLayerThickness)
                             throw "<prism_layer_thickness> is missing";
-                        if(!hasNearWallThickness)
+                        if(hasPrismLayers && !hasNearWallThickness)
                             throw "<near_wall_thickness> is missing";
+                        if(!hasPrismLayers && (hasPrismLayerThickness || hasNearWallThickness))
+                            throw "<num_prism_layers> is missing";
                         if(!hasTwoSurfaceSizes)
                             throw "needs at least two surface sizes";
                     }
@@ -672,7 +691,8 @@ void StarJob::loadStarJob() {
                             hasFlowDirectionY    &&
                             hasFlowDirectionZ){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Physics model"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // physics model complete
                         physicsModel = true;
                         hasBeginPhysicsModel = false;
@@ -726,7 +746,8 @@ void StarJob::loadStarJob() {
                     // Check solver options data is complete
                     if(hasCFL){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Solver options"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // solver options complete
                         solverOptions = true;
                         hasBeginSolverOptions = false;
@@ -784,7 +805,8 @@ void StarJob::loadStarJob() {
                     // Check if stopping criteria data is complete
                     if(hasMaxSteps && hasSamples && hasAsymptotycCL){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Stopping criteria"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // Stopping criteria complete
                         stoppingCriteria = true;
                         hasBeginStoppingCriteria = false;
@@ -843,7 +865,7 @@ void StarJob::printThreeColumns(std::string _c1, std::string _c2, std::string _c
 }
 
 void StarJob::printJobData(){
-    std::cout << "\n:::::::::::: JOB " + jobName + "\n" << std::endl;
+    std::cout << "\n:::::::::::: JOB "; colorText(jobName + "\n\n", WHITE_BLUE);
 
     printTwoColumns(" SETUP", " ", '-');
     printTwoColumns("Client:", getClientJobDirectory());
@@ -852,7 +874,7 @@ void StarJob::printJobData(){
     printTwoColumns("Download sim file:", saveSimFile? "yes" : "no");
     printTwoColumns(" Auto save:", autoSaveSimulation? "yes" : "no");
     if(autoSaveSimulation){
-        printTwoColumns("Auto save files:", std::to_string(numAutoSaveFiles));
+        printTwoColumns("Auto save files:", (numAutoSaveFiles == 0)? "replace" : std::to_string(numAutoSaveFiles));
         printTwoColumns("Iteration interval:", std::to_string(iterationInterval));
     }
     std::cout << std::endl;
@@ -864,14 +886,16 @@ void StarJob::printJobData(){
     }
     std::cout << std::endl;
 
-    printTwoColumns(" MESH", " ", '-');
-    printTwoColumns("Prism layers:", std::to_string(prismLayers));
-    printTwoColumns("PL thickness:", std::to_string(prismLayerThickness) + " m");
-    printTwoColumns("Near wall thickness:", std::to_string(nearWallThickness) + " m");
+    if(prismLayers > 0){
+        printTwoColumns(" MESH", " ", '-');
+        printTwoColumns("Prism layers:", std::to_string(prismLayers));
+        printTwoColumns("PL thickness:", std::to_string(prismLayerThickness) + " m");
+        printTwoColumns("Near wall thickness:", std::to_string(nearWallThickness) + " m");
+    }
 
     // If batch mode, just wait Default::pauseTime, otherwise expect user input
     if(!batchModeOption){
-        std::cout << "\n Press <enter> to continue..." << std::endl;
+        std::cout << "\n Press "; colorText("<enter>", GREEN); std::cout << " to continue..." << std::endl;
         std::cin.get();
 #ifdef _WIN32
         system("cls");
@@ -885,6 +909,7 @@ void StarJob::printJobData(){
         system("cls");
 #endif
 #if defined(linux) || defined(__APPLE__)
+        std::this_thread::sleep_for(std::chrono::milliseconds(Default::pauseTime));
         system("clear");
 #endif
     }
