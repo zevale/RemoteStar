@@ -10,14 +10,13 @@ namespace Math {
 
 namespace Default{
     // ---------- GENERIC
-    const char* const filePath = "empty_path";
-    constexpr     int scalar   = 32;
-    constexpr    bool boolean  = false;
+    const char* const filePath      ("empty_path");
+    constexpr     int scalar        (32);
+    constexpr    bool boolean       (false);
 
     // ---------- PAUSE
     constexpr int pauseTime = 3000; // Milliseconds
 
-    // ---------- JOB SETUP
 
     // ---------- AUTO SAVE
     constexpr int  numAutosaveFiles   (0);
@@ -29,6 +28,9 @@ namespace Default{
     constexpr double  boundaryMarchAngle      (85);
     constexpr double  minimumThickness        (5);
     constexpr double  layerChoppingPercentage (10);
+
+    // ---------- PHYSICS VALUES
+    constexpr double dynamicViscosity (-1e3); // Negative means field is missing (inviscid)
 
     // ---------- NO PRISM LAYER BY DEFAULT
     constexpr int zeroLayers(0);
@@ -44,6 +46,11 @@ namespace Default{
     constexpr double normalX (0);
     constexpr double normalY (0);
     constexpr double normalZ (1);
+
+    // ---------- STOPPING CRITERIA
+    constexpr    int numSamples  (0);
+    constexpr double asymptoticCL(-1e3); // Negative means field is missing
+    constexpr double asymptoticCD(-1e3);
 }
 
 namespace CrossPlatform {
