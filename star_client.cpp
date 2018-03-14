@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
-#include <string>
 
 // Windows support
 #ifdef _WIN32
@@ -40,7 +39,7 @@ void errorInterpreted(const std::string& _errorMessage) {
 
 // Print error message to std::cerr and exit
 void exitNow(const std::string& _errorMessage) {
-    colorText(_errorMessage, RED);
+    std::cerr << _errorMessage << std::endl;
     exit(EXIT_FAILURE);
 }
 
@@ -405,8 +404,7 @@ int initializeSSH(SSH& _sshConnection) {
         _sshConnection.loadSSH();
     } catch (const char* loadSshException) {
         // Error loading ssh server data from <star_sshServer>
-        colorText("\nERROR: " + std::string(loadSshException) + "\n", RED);
-//        std::cerr << "\nERROR: " << loadSshException << std::endl;
+        std::cerr << "\nERROR: " << loadSshException << std::endl;
         return FALSE;
     }
     // Show SSH server
@@ -474,8 +472,7 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         shellRunScriptFile.close();
     } catch (const char* loadHostException) {
         // Error loading hosts from <star_hostList>
-        colorText("\nERROR: " + std::string(loadHostException) + "\n", RED);
-//        std::cerr << "\nERROR: " << loadHostException << std::endl;
+        std::cerr << "\nERROR: " << loadHostException << std::endl;
         return FALSE;
     }
     // Show host list
@@ -514,8 +511,7 @@ int initializeStarJob(StarJob& _starJob) {
 
     } catch(const char * loadJobException) {
         // Error loading hosts from <star_hostList>
-        colorText("\nERROR: " + std::string(loadJobException) + "\n", RED);
-//        std::cerr << "ERROR: " << loadJobException << std::endl;
+        std::cerr << "ERROR: " << loadJobException << std::endl;
         return FALSE;
     }
     // Check resources: <star_sshServer> <star_hostList>
@@ -581,8 +577,7 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
     secureCopy(_sshConnection, _starJob.getServerJobDirectory("Forces.csv"),
                _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
     if(!fileExists(_starJob.getClientJobDirectory("Forces.csv"))){
-        colorText("ERROR: Unable to fetch Forces.csv from server!", RED);
-//        std::cerr << "ERROR: Unable to fetch Forces.csv from server!" << std::endl;
+        std::cerr << "ERROR: Unable to fetch Forces.csv from server!" << std::endl;
         filesFetched = false;
     }
 
@@ -591,8 +586,7 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
         secureCopy(_sshConnection, _starJob.getServerJobDirectory(_starJob.getJobName() + ".sim"),
                    _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
         if (!fileExists(_starJob.getClientJobDirectory(_starJob.getJobName() + ".sim"))){
-            colorText("ERROR: Unable to fetch Sim File from server", RED);
-//            std::cerr << "ERROR: Unable to fetch Sim File from server" << std::endl;
+            std::cerr << "ERROR: Unable to fetch Sim File from server" << std::endl;
             filesFetched = false;
         }
     }
@@ -600,87 +594,8 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
     // Clean server only if files have been correctly fetched
     if(_starJob.getCleanServer() && filesFetched){
         secureShell(_sshConnection, "rm -r " + _starJob.getServerJobDirectory());
-        colorText("\nNOTE: job folder deleted from server\n\n", YELLOW);
-//        std::cerr << "\nNOTE: job folder deleted from server" << std::endl;
+        std::cerr << "\nNOTE: job folder deleted from server" << std::endl;
     }
 
     return (filesFetched? TRUE : FALSE);
-}
-
-/*
- * colorText()
- *
- * DESCRIPTION
- * Prints colored text to the console
- */
-void colorText(const std::string& _text, Color _color){
-#ifdef _WIN32
-    // Get console handle
-    HANDLE hConsole;
-    hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    // color your text in Windows console mode
-    // colors are 0=black 1=blue 2=green and so on to 15=white
-    // colorattribute = foreground + background * 16
-    // to get red text on yellow use 4 + 14*16 = 228
-    // light red on yellow would be 12 + 14*16 = 236
-
-    int consoleAttribute;
-
-    switch(_color){
-        case RED:
-            consoleAttribute = 12 + 0*0xF;
-            break;
-        case GREEN:
-            consoleAttribute = 2 + 0*0xF;
-            break;
-        case BLUE:
-            consoleAttribute = 9 + 0*0xF;
-            break;
-        case YELLOW:
-            consoleAttribute = 0xE + 0*0xF;
-            break;
-        case WHITE_BLUE:
-            consoleAttribute = 0xF + 9*0xF;
-            break;
-    }
-
-    FlushConsoleInputBuffer(hConsole);
-    SetConsoleTextAttribute(hConsole, consoleAttribute);
-
-    // Print colored text
-    std::cout << _text;
-
-    // Restore default white text and black background
-    SetConsoleTextAttribute(hConsole, 15);
-#endif
-#if defined(linux) || defined(__APPLE__)
-    // UNTESTED CODE
-
-    std::string escapeSequence;
-
-    // Color escape sequences
-    // ESC[ = Control Sequence Introducer
-    char normal[] = { 0x1b, '[', '0', 'm', 0 };
-
-    switch(_color){
-        case RED:
-            escapeSequence = { 0x1b, '[', '9', '1' , ';', '4', '0', 'm', 0 };
-            break;
-        case GREEN:
-            escapeSequence = { 0x1b, '[', '3', '2' , ';', '4', '0', 'm', 0 };
-            break;
-        case BLUE:
-            escapeSequence = { 0x1b, '[', '3', '4' , ';', '4', '0', 'm', 0 };
-        case YELLOW:
-            escapeSequence = { 0x1b, '[', '9', '3' , ';', '4', '0', 'm', 0 };
-            break;
-        case WHITE_BLUE:
-            escapeSequence = { 0x1b, '[', '3', '7' , ';', '1', '0', '4', 'm', 0 };
-            break;
-    }
-
-    // Print colored text
-    std::cout << escapeSequence << _text << normal;
-#endif
 }

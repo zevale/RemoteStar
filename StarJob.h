@@ -66,7 +66,6 @@ private:
     int                      maxSteps;
     int                      numSamples;
     double                   asymptoticCL;
-    double                   asymptoticCD;
 
 private:
     void printTwoColumns(std::string _c1, std::string _c2) const;
@@ -112,7 +111,6 @@ public:
     int                      getMaxSteps()                                      const;
     int                      getNumSamples()                                    const;
     double                   getAsymptoticCL()                                  const;
-    double                   getAsymptoticCD()                                  const;
 
     // Class methods
     void loadStarJob();

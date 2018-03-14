@@ -8,11 +8,9 @@
 class ExportResults {
 private:
     std::string resultsFilePath;
-    double      dynamicViscosity;
 public:
     // Constructor
-    explicit ExportResults(const std::string& _resultsFilePath  = Default::filePath,
-                           double             _dynamicViscosity = {});
+    explicit ExportResults(const std::string& _resultsFilePath = Default::filePath);
 
     std::vector<std::string> exportResultsCode();
 };

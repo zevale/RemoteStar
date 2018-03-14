@@ -4,21 +4,11 @@
 
 #include <vector>
 #include <string>
-#include "MightyTypes.h"
-#include "MightyConstants.h"
 
 class MeshContinuum {
 private:
-    PrismLayer prismLayer;
+    // Data on the mesh continuum goes here
 public:
-    // Constructor
-    explicit MeshContinuum(const PrismLayer& _prismLayer = {Default::boundaryMarchAngle,
-                                                            Default::minimumThickness,
-                                                            Default::layerChoppingPercentage,
-                                                            Default::scalar,
-                                                            Default::scalar,
-                                                            Default::scalar});
-
     std::vector<std::string> meshContinuumCode();
 };
 #endif //MESHCONTINUUM_H

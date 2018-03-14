@@ -14,15 +14,6 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Get ofstream object to be able to write the macro
     macroFile = openMightyMacroFile();
 
-    // Import assignment
-    import = Import({Default::boundaryMarchAngle,
-                     Default::minimumThickness,
-                     Default::layerChoppingPercentage,
-                     currentStarJob->getPrismLayers(),
-                     currentStarJob->getPrismLayerThickness(),
-                     currentStarJob->getNearWallThickness()},
-                    currentStarJob->getDynamicViscosity());
-
     // Auto save assignment
     autoSave = AutoSave(currentStarJob->getServerJobDirectory(currentStarJob->getJobName() + ".sim"),
                         Default::autoSaveMesh,
@@ -36,20 +27,8 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Domain assignment (geometry file path on the server, region name, boundary condition)
     domain = Domain(currentStarJob->getServerJobDirectory("resources/DomainGeometry.x_b"));
 
-    // Mesh continuum assignment (prism layer)
-    meshContinuum = MeshContinuum({Default::boundaryMarchAngle,
-                                   Default::minimumThickness,
-                                   Default::layerChoppingPercentage,
-                                   currentStarJob->getPrismLayers(),
-                                   currentStarJob->getPrismLayerThickness(),
-                                   currentStarJob->getNearWallThickness()});
-
-    // Physics continuum assignment
-    physicsContinuum = PhysicsContinuum(currentStarJob->getDynamicViscosity());
-
     // Show domain assignment
-    showDomain = ShowDomain(currentStarJob->getRegionName(),
-                            currentStarJob->getBoundaryCondition());
+    showDomain = ShowDomain(currentStarJob->getRegionName());
 
     // MeshValues assignment (base size, prism layer, surface size, region name, boundary conditions)
     meshValues = MeshValues(currentStarJob->getBaseSize(),
@@ -107,12 +86,10 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Stopping criteria assignment (maxSteps, number of samples for asymptotic convergence, asymptotic convergence)
     stoppingCriteria = StoppingCriteria(currentStarJob->getMaxSteps(),
                                         currentStarJob->getNumSamples(),
-                                        currentStarJob->getAsymptoticCL(),
-                                        currentStarJob->getAsymptoticCD());
+                                        currentStarJob->getAsymptoticCL());
 
     // Export results assignment (results file path on the server)
-    exportResults = ExportResults(currentStarJob->getServerJobDirectory("Forces.csv"),
-                                  currentStarJob->getDynamicViscosity());
+    exportResults = ExportResults(currentStarJob->getServerJobDirectory("Forces.csv"));
 
     // Close sim assignment (sim file path on the server)
     closeSim = CloseSim(currentStarJob->getServerJobDirectory(currentStarJob->getJobName()) + ".sim");
@@ -168,7 +145,6 @@ void MightyMacro::writeImport() {
 void MightyMacro::beginStarMacro() {
     std::vector<std::string> code;
     code = {
-            "",
             "// StarMacro is implemented by STAR-CCM+",
             "public class MightyMacro extends StarMacro {",
     };

@@ -24,7 +24,7 @@ public:
                                                                               Default::scalar,
                                                                               Default::scalar,
                                                                               Default::scalar},
-                        const std::vector<double>&      _surfaceSize       = {},
+                        const std::vector<double>&      _surfaceSize       = {0.05, 3, 3, 3, 3},
                         const std::vector<std::string>& _regionName        = {},
                         const std::vector<std::string>& _boundaryCondition = {});
 

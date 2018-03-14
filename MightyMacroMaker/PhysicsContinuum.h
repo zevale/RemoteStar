@@ -7,11 +7,8 @@
 
 class PhysicsContinuum {
 private:
-    double dynamicViscosity;
+    // Data on the physics continuum goes here
 public:
-    // Constructor
-    explicit PhysicsContinuum(double _dynamicViscosity = {});
-
     std::vector<std::string> physicsContinuumCode();
 };
 #endif //PHYSICSCONTINUUM_H

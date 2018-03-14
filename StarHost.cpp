@@ -1,6 +1,5 @@
 #include "StarHost.h"
 #include "MightyMacroMaker/MightyConstants.h"
-#include "star_client.h"
 
 #include <iostream>
 #include <vector>
@@ -167,7 +166,7 @@ void StarHost::printHostList() {
 
     // If batch mode, just wait Default::pauseTime, otherwise expect user input
     if(!batchModeOption){
-        std::cout << "\n Press "; colorText("<enter>", GREEN); std::cout << " to continue..." << std::endl;
+        std::cout << "\n Press <enter> to continue..." << std::endl;
         std::cin.get();
     } else {
 #ifdef _WIN32

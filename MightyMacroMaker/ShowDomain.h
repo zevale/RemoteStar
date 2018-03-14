@@ -11,8 +11,7 @@ private:
     std::vector<std::string> boundaryCondition;
 public:
     // Constructor
-    explicit ShowDomain(const std::vector<std::string>& _regionName        = {},
-                        const std::vector<std::string>& _boundaryCondition = {});
+    explicit ShowDomain(const std::vector<std::string>& _regionName        = {});
 
     std::vector<std::string> showDomainCode();
 };
