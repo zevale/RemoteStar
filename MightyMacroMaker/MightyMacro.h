@@ -60,8 +60,8 @@ public:
     void writeMacro();
 
 private:
-    void          writeToFile(const std::vector<std::string>& _code);
     std::ofstream openMightyMacroFile();
+    void          writeToFile(const std::vector<std::string>& _code);
     void          writeImport();
     void          beginStarMacro();
     void          endStarMacro();

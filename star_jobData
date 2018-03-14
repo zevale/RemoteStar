@@ -2,9 +2,9 @@
 
 #BEGIN_JOB_SETUP
 job_name                mightySim
-client_directory        /Users/Nuno/Desktop/MightyMacro/
+client_directory        /Users/nuno/Desktop/MightyMacro/
 server_directory        /home/nuno/Desktop/RemoteStar/
-save_sim_file           no
+save_sim_file           yes
 clean_server            yes
 auto_save               yes
 auto_save_files         0
@@ -24,7 +24,7 @@ base_size               0.5
 num_prism_layers        10
 prism_layer_thickness   0.05
 near_wall_thickness     0.000077
-surface_size            SurfMesh        0.01
+surface_size            SurfMesh        0.05
 surface_size            Inlet           3
 surface_size            FarSide         3
 surface_size            Outlet          3
@@ -51,6 +51,7 @@ CFL                     36
 max_steps               500
 num_samples             75
 asymptotic_CL           0.0001
+asymptotic_CD           0.00001
 #END_STOPPING_CRITERIA
 
 #END_STAR_JOB

@@ -32,8 +32,8 @@ std::vector<std::string> PhysicsValues::physicsValuesCode() {
             "        double valueMachNumber        = " + javaScientific(machNumber) + ";"
     };
 
-    // Dynamic viscosity for RANS simulation NEEDS TO BE CODED
-    if(1) {
+    // Dynamic viscosity for RANS simulation
+    if(dynamicViscosity > 0) {
         code.emplace_back("        double valueDynamicViscosity  = " + javaScientific(dynamicViscosity) + ";");
     }
 
@@ -50,28 +50,22 @@ std::vector<std::string> PhysicsValues::physicsValuesCode() {
             "",
             "        // Get physics continuum object",
             "        PhysicsContinuum physicsContinuumObj = ((PhysicsContinuum) activeSimulation.getContinuumManager().getContinuum(\"Physics 1\"));",
-            ""
     };
     code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
     // Set AUSM scheme
     codeBuffer = {
+            "",
             "        // Inviscid flux - AUSM SCHEME",
             "        CoupledFlowModel coupledFlowModelObj = physicsContinuumObj.getModelManager().getModel(CoupledFlowModel.class);",
-            "        coupledFlowModelObj.getCoupledInviscidFluxOption().setSelected(CoupledInviscidFluxOption.Type.AUSM_SCHEME);",
-            ""
+            "        coupledFlowModelObj.getCoupledInviscidFluxOption().setSelected(CoupledInviscidFluxOption.Type.AUSM_SCHEME);"
     };
     code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
     // Initial conditions
     codeBuffer = {
-            "        // INITIAL CONDITIONS",
             "",
-            "        // Dynamic viscosity",
-            "        SingleComponentGasModel singleComponentGasModelObj =  physicsContinuumObj.getModelManager().getModel(SingleComponentGasModel.class);",
-            "        Gas gasAir = ((Gas) singleComponentGasModelObj.getMaterial());",
-            "        ConstantMaterialPropertyMethod constantMaterialPropertyMethodDynamicViscosity = ((ConstantMaterialPropertyMethod) gasAir.getMaterialProperties().getMaterialProperty(DynamicViscosityProperty.class).getMethod());",
-            "        constantMaterialPropertyMethodDynamicViscosity.getQuantity().setValue(valueDynamicViscosity);",
+            "        // INITIAL CONDITIONS",
             "",
             "        // Reference pressure",
             "        physicsContinuumObj.getReferenceValues().get(ReferencePressure.class).setValue(valueReferencePressure);",
@@ -82,13 +76,26 @@ std::vector<std::string> PhysicsValues::physicsValuesCode() {
             "",
             "        // Velocity",
             "        VelocityProfile velocityProfileObj = physicsContinuumObj.getInitialConditions().get(VelocityProfile.class);",
-            "        velocityProfileObj.getMethod(ConstantVectorProfileMethod.class).getQuantity().setComponents(valueVelocityX, valueVelocityY, valueVelocityZ);",
-            ""
+            "        velocityProfileObj.getMethod(ConstantVectorProfileMethod.class).getQuantity().setComponents(valueVelocityX, valueVelocityY, valueVelocityZ);"
     };
     code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
+    // Initial condition viscosity
+    if(dynamicViscosity > 0){
+        codeBuffer = {
+                "",
+                "        // Dynamic viscosity",
+                "        SingleComponentGasModel singleComponentGasModelObj =  physicsContinuumObj.getModelManager().getModel(SingleComponentGasModel.class);",
+                "        Gas gasAir = ((Gas) singleComponentGasModelObj.getMaterial());",
+                "        ConstantMaterialPropertyMethod constantMaterialPropertyMethodDynamicViscosity = ((ConstantMaterialPropertyMethod) gasAir.getMaterialProperties().getMaterialProperty(DynamicViscosityProperty.class).getMethod());",
+                "        constantMaterialPropertyMethodDynamicViscosity.getQuantity().setValue(valueDynamicViscosity);",
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
     // Boundary conditions
     codeBuffer = {
+            "",
             "        // BOUNDARY CONDITIONS",
             "",
             "        // Get the region object",

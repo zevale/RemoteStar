@@ -100,6 +100,6 @@ void SSH::loadSSH() {
  */
 void SSH::printConnectionData() {
     std::cout << "\n:::::::::::: SSH CONNECTION to " << getAlias() << std::endl;
-    std::cout << "       USER: " << userSSH << std::endl;
-    std::cout << "     SERVER: " << serverSSH << std::endl;
+    std::cout << "       User: " << userSSH << std::endl;
+    std::cout << "     Server: " << serverSSH << std::endl;
 }

@@ -34,6 +34,14 @@ enum CopyOptions{
     COPY_FOLDER,
 };
 
+enum Color{
+    RED = 0,
+    GREEN,
+    BLUE,
+    YELLOW,
+    WHITE_BLUE,
+};
+
 // GENERAL FUNCTIONALITY
 
 // Print interpreted error message and exit
@@ -115,3 +123,8 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob);
  */
 int fetchResults(const SSH& _sshConnection, const StarJob& _starJob);
 #endif // STAR_CLIENT_H
+
+/*
+ * Prints colored text to the console
+ */
+void colorText(const std::string& _text, Color _color);

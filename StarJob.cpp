@@ -1,5 +1,6 @@
 #include "StarJob.h"
 #include "MightyMacroMaker/MightyConstants.h"
+#include "star_client.h"
 
 #include <fstream>
 #include <iostream>
@@ -158,21 +159,33 @@ double StarJob::getAsymptoticCL() const {
     return asymptoticCL;
 }
 
+double StarJob::getAsymptoticCD() const {
+    return asymptoticCD;
+}
+
 /*
  * Constructor that sets the job file path assuming  <star_jobData>
  * is in the current directory by default
  */
 StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
-        jobFilePath(_jobFilePath),
+        jobFilePath    (_jobFilePath),
         batchModeOption(_batchMode),
 
         // Auto save defaults (might not be assigned by user)
         autoSaveSimulation(Default::autoSaveSimulation),
-        numAutoSaveFiles(Default::numAutosaveFiles),
-        iterationInterval(Default::iterationInterval),
+        numAutoSaveFiles  (Default::numAutosaveFiles),
+        iterationInterval (Default::iterationInterval),
 
         // Prism layer defaults
-        prismLayers(Default::zeroLayers) {}
+        prismLayers(Default::zeroLayers),
+
+        // Physics values defaults
+        dynamicViscosity(Default::dynamicViscosity),
+
+        // Stopping criteria defaults
+        numSamples  (Default::numSamples),
+        asymptoticCL(Default::asymptoticCL),
+        asymptoticCD(Default::asymptoticCD) {}
 
 /*
  * loadStarJob()
@@ -250,6 +263,7 @@ void StarJob::loadStarJob() {
     bool hasMaxSteps              = false;
     bool hasSamples               = false;
     bool hasAsymptotycCL          = false;
+    bool hasAsymptotycCD          = false;
 
     // Job status options
     bool jobSetup         = false;
@@ -393,7 +407,8 @@ void StarJob::loadStarJob() {
                     if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer
                             && ((hasAutoSave && hasAutoSaveFiles && hasAutoSaveIterations) || !hasAutoSave)) {
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Job setup"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // jobSetup complete
                         jobSetup = true;
                         hasBeginJobSetup = false;
@@ -464,7 +479,8 @@ void StarJob::loadStarJob() {
                     // Check if regions data is complete
                     if(hasOneWall && hasOneFreeStream){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Regions"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // regions setup complete
                         regions = true;
                         hasBeginRegions = false;
@@ -561,7 +577,8 @@ void StarJob::loadStarJob() {
                        &&
                             hasTwoSurfaceSizes){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Mesh model"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // mesh model complete
                         meshModel = true;
                         hasBeginMeshModel = false;
@@ -677,8 +694,7 @@ void StarJob::loadStarJob() {
                 // Check #END_PHYSICS_MODEL
                 if(hasBeginPhysicsModel && (word == "#END_PHYSICS_MODEL")){
                     // Check physics model data is complete
-                    if(hasDynamicViscosity       &&
-                            hasStaticTemperature &&
+                    if(hasStaticTemperature      &&
                             hasReferencePressure &&
                             hasReferenceVelocity &&
                             hasReferenceDensity  &&
@@ -687,14 +703,13 @@ void StarJob::loadStarJob() {
                             hasFlowDirectionY    &&
                             hasFlowDirectionZ){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Physics model"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // physics model complete
                         physicsModel = true;
                         hasBeginPhysicsModel = false;
                     } else{
                         // Missing data
-                        if(!hasDynamicViscosity)
-                            throw "<dynamic_viscosity> is missing";
                         if(!hasStaticTemperature)
                             throw "<static_temperature> is missing";
                         if(!hasReferencePressure)
@@ -741,7 +756,8 @@ void StarJob::loadStarJob() {
                     // Check solver options data is complete
                     if(hasCFL){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Solver options"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // solver options complete
                         solverOptions = true;
                         hasBeginSolverOptions = false;
@@ -794,22 +810,32 @@ void StarJob::loadStarJob() {
                         throw "<asymptotic_CL> is empty";
                 }
 
+                // Check asymptotic_CL
+                if(hasBeginStoppingCriteria && (word == "asymptotic_CD")){
+                    if(issLine >> word){
+                        asymptoticCD = std::stod(word, nullptr);
+                        hasAsymptotycCD = true;
+                    } else
+                        throw "<asymptotic_CD> is empty";
+                }
+
                 // Check #END_STOPPING_CRITERIA tag
                 if(hasBeginStoppingCriteria && (word == "#END_STOPPING_CRITERIA")){
                     // Check if stopping criteria data is complete
-                    if(hasMaxSteps && hasSamples && hasAsymptotycCL){
+                    if(hasMaxSteps &&
+                            // If has samples, it must have criteria for CL and/or CD
+                            ((hasSamples && (hasAsymptotycCL || hasAsymptotycCD)) || !hasSamples)){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Stopping criteria"
-                                                       << std::right << std::setw(mediumColumn) << "Loaded" << std::endl;
+                                                       << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
                         // Stopping criteria complete
                         stoppingCriteria = true;
                         hasBeginStoppingCriteria = false;
                     } else {
                         if(!hasMaxSteps)
                             throw "<max_steps> is missing";
-                        if(!hasSamples)
-                            throw "<num_samples> is missing";
-                        if(!hasAsymptotycCL)
-                            throw "<asymptotic_CL> is missing";
+                        if((hasSamples && (!hasAsymptotycCL || !hasAsymptotycCD)))
+                            throw "<asymptotic_CL> or <asymptotic_CD> is missing";
                     }
                 }
             }
@@ -858,8 +884,9 @@ void StarJob::printThreeColumns(std::string _c1, std::string _c2, std::string _c
 }
 
 void StarJob::printJobData(){
-    std::cout << "\n:::::::::::: JOB " + jobName + "\n" << std::endl;
+    std::cout << "\n:::::::::::: JOB "; colorText(jobName + "\n\n", WHITE_BLUE);
 
+    // Job setup
     printTwoColumns(" SETUP", " ", '-');
     printTwoColumns("Client:", getClientJobDirectory());
     printTwoColumns("Server:", getServerJobDirectory());
@@ -867,11 +894,24 @@ void StarJob::printJobData(){
     printTwoColumns("Download sim file:", saveSimFile? "yes" : "no");
     printTwoColumns(" Auto save:", autoSaveSimulation? "yes" : "no");
     if(autoSaveSimulation){
-        printTwoColumns("Auto save files:", std::to_string(numAutoSaveFiles));
+        printTwoColumns("Auto save files:", (numAutoSaveFiles == 0)? "replace" : std::to_string(numAutoSaveFiles));
         printTwoColumns("Iteration interval:", std::to_string(iterationInterval));
     }
     std::cout << std::endl;
 
+    // Physics data
+    printTwoColumns(" PHYSICS", " ", '-');
+    printTwoColumns("Type:", (dynamicViscosity > 0) ? "RANS" : "Inviscid");
+    printTwoColumns("Mach =", std::to_string(machNumber));
+    printTwoColumns("T (static) =", std::to_string(staticTemperature) + " K");
+    printTwoColumns("V (ref) =", std::to_string(referenceVelocity) + " m/s");
+    printTwoColumns("p (ref) =", std::to_string(referencePressure) + " Pa");
+    printTwoColumns("rho (ref) =", std::to_string(referenceDensity) + " kg/m3");
+    if(dynamicViscosity > 0)
+        printTwoColumns("mu (air) =", std::to_string(dynamicViscosity) + " Pa.s");
+    std::cout << std::endl;
+
+    // Region data
     printTwoColumns(" REGIONS", " ", '-');
     printThreeColumns("Region", "Boundary", "Surface Size");
     for(int i = 0; i < getRegionName().size(); i++){
@@ -879,6 +919,7 @@ void StarJob::printJobData(){
     }
     std::cout << std::endl;
 
+    // Prism layer data
     if(prismLayers > 0){
         printTwoColumns(" MESH", " ", '-');
         printTwoColumns("Prism layers:", std::to_string(prismLayers));
@@ -888,7 +929,7 @@ void StarJob::printJobData(){
 
     // If batch mode, just wait Default::pauseTime, otherwise expect user input
     if(!batchModeOption){
-        std::cout << "\n Press <enter> to continue..." << std::endl;
+        std::cout << "\n Press "; colorText("<enter>", GREEN); std::cout << " to continue..." << std::endl;
         std::cin.get();
 #ifdef _WIN32
         system("cls");
