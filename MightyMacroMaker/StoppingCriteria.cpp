@@ -86,11 +86,11 @@ std::vector<std::string> StoppingCriteria::stoppingCriteriaCode() {
                 "        // Set maximum amplitude",
                 "        MonitorIterationStoppingCriterionAsymptoticType monitorIterationStoppingCriterionAsymptoticTypeCD = ((MonitorIterationStoppingCriterionAsymptoticType) monitorIterationStoppingCriterionCD.getCriterionType());",
                 "        monitorIterationStoppingCriterionAsymptoticTypeCD.getMaxWidth().setValue(valueAsymptoticCD);",
-                "        monitorIterationStoppingCriterionAsymptoticTypeCD.setNumberSamples(numberSamples);",
-                "    }"
+                "        monitorIterationStoppingCriterionAsymptoticTypeCD.setNumberSamples(numberSamples);"
         };
         code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
     }
+    code.emplace_back("    }");
 
     return code;
 }

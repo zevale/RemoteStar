@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 project(RemoteStar)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 
 add_executable(RemoteStar
         main.cpp
@@ -46,4 +47,6 @@ add_executable(RemoteStar
         MightyMacroMaker/SolverOptions.h
         MightyMacroMaker/SolverOptions.cpp
         MightyMacroMaker/StoppingCriteria.h
-        MightyMacroMaker/StoppingCriteria.cpp)
+        MightyMacroMaker/StoppingCriteria.cpp
+        MightyMacroMaker/VolumetricControls.cpp
+        MightyMacroMaker/VolumetricControls.h)

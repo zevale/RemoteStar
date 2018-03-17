@@ -21,6 +21,7 @@
 #include "Aircraft.h"
 #include "Domain.h"
 #include "MeshContinuum.h"
+#include "VolumetricControls.h"
 #include "PhysicsContinuum.h"
 #include "ShowDomain.h"
 #include "MeshValues.h"
@@ -36,21 +37,22 @@ private:
     std::string      macroFilePath;    // File path to the macro
     std::ofstream    macroFile;        // To write
 
-    StarJob          *currentStarJob;
-    Import           import;
-    AutoSave         autoSave;
-    Aircraft         aircraft;
-    Domain           domain;
-    MeshContinuum    meshContinuum;
-    PhysicsContinuum physicsContinuum;
-    ShowDomain       showDomain;
-    MeshValues       meshValues;
-    PhysicsValues    physicsValues;
-    SolverOptions    solverOptions;
-    SolutionMonitors solutionMonitors;
-    StoppingCriteria stoppingCriteria;
-    ExportResults    exportResults;
-    CloseSim         closeSim;
+    StarJob            *currentStarJob;
+    Import             import;
+    AutoSave           autoSave;
+    Aircraft           aircraft;
+    Domain             domain;
+    MeshContinuum      meshContinuum;
+    PhysicsContinuum   physicsContinuum;
+    ShowDomain         showDomain;
+    MeshValues         meshValues;
+    VolumetricControls volumetricControls;
+    PhysicsValues      physicsValues;
+    SolverOptions      solverOptions;
+    SolutionMonitors   solutionMonitors;
+    StoppingCriteria   stoppingCriteria;
+    ExportResults      exportResults;
+    CloseSim           closeSim;
 
 public:
     // Constructor
@@ -74,6 +76,7 @@ private:
     void          writePhysicsContinuum();
     void          writeShowDomain();
     void          writeMeshValues();
+    void          writeVolumetricControls();
     void          writePhysicsValues();
     void          writeSolverOptions();
     void          writeSolutionMonitors();

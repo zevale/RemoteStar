@@ -65,6 +65,23 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                             currentStarJob->getRegionName(),
                             currentStarJob->getBoundaryCondition());
 
+    // Volumetric controls
+    volumetricControls = VolumetricControls({currentStarJob->getBlockX1(),
+                                             currentStarJob->getBlockY1(),
+                                             currentStarJob->getBlockZ1(),
+                                             currentStarJob->getBlockX2(),
+                                             currentStarJob->getBlockY2(),
+                                             currentStarJob->getBlockZ2(),
+                                             currentStarJob->getBlockSurfaceSize()},
+                                            {currentStarJob->getCylinderX1(),
+                                             currentStarJob->getCylinderY1(),
+                                             currentStarJob->getCylinderZ1(),
+                                             currentStarJob->getCylinderX2(),
+                                             currentStarJob->getCylinderY2(),
+                                             currentStarJob->getCylinderZ2(),
+                                             currentStarJob->getCylinderRadius(),
+                                             currentStarJob->getCylinderSurfaceSize()});
+
     // Physics values assignment (mach, viscosity, ref. pressure, static temp., flow direction, velocity components)
     physicsValues = PhysicsValues(currentStarJob->getMachNumber(),
                                   currentStarJob->getDynamicViscosity(),
@@ -136,6 +153,7 @@ void MightyMacro::writeMacro() {
     writePhysicsContinuum();
     writeShowDomain();
     writeMeshValues();
+    writeVolumetricControls();
     writePhysicsValues();
     writeSolverOptions();
     writeSolutionMonitors();
@@ -187,6 +205,7 @@ void MightyMacro::endStarMacro() {
 
 void MightyMacro::writeExecute() {
     std::vector<std::string> code;
+    std::vector<std::string> codeBuffer;
 
     // Execute code
     code = {
@@ -199,7 +218,14 @@ void MightyMacro::writeExecute() {
             "        meshContinuum();",
             "        physicsContinuum();",
             "        showDomain();",
-            "        meshValues();",
+            "        meshValues();"
+    };
+
+    // Check volumetric controls
+    if(!volumetricControls.getBlock().surfaceSize.empty())
+        code.emplace_back("        volumetricControls();");
+
+    codeBuffer = {
             "        physicsValues();",
             "        solverOptions();",
             "        solutionMonitors();",
@@ -210,6 +236,7 @@ void MightyMacro::writeExecute() {
             "        closeSimulation();",
             "    }"
     };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
     // Write execute code to macro
     writeToFile(code);
@@ -268,6 +295,13 @@ void MightyMacro::writeShowDomain() {
 
 void MightyMacro::writeMeshValues() {
     writeToFile(meshValues.meshValuesCode());
+}
+
+void MightyMacro::writeVolumetricControls() {
+    // Check volumetric control options
+    if(!volumetricControls.getBlock().surfaceSize.empty()){
+        writeToFile(volumetricControls.volumetricControlsCode());
+    }
 }
 
 void MightyMacro::writePhysicsValues() {

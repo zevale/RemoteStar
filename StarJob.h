@@ -47,6 +47,23 @@ private:
     std::vector<std::string> surfaceName;
     std::vector<double>      surfaceSize;
 
+    // Volumetric controls
+    std::vector<double> blockX1;
+    std::vector<double> blockY1;
+    std::vector<double> blockZ1;
+    std::vector<double> blockX2;
+    std::vector<double> blockY2;
+    std::vector<double> blockZ2;
+    std::vector<double> blockSurfaceSize;
+    std::vector<double> cylinderX1;
+    std::vector<double> cylinderY1;
+    std::vector<double> cylinderZ1;
+    std::vector<double> cylinderX2;
+    std::vector<double> cylinderY2;
+    std::vector<double> cylinderZ2;
+    std::vector<double> cylinderRadius;
+    std::vector<double> cylinderSurfaceSize;
+
     // Physics model
     double                   machNumber;
     double                   dynamicViscosity;
@@ -98,6 +115,21 @@ public:
     double                   getNearWallThickness()                             const;
     std::vector<std::string> getSurfaceName()                                   const;
     std::vector<double>      getSurfaceSize()                                   const;
+    std::vector<double>      getBlockX1()                                       const;
+    std::vector<double>      getBlockY1()                                       const;
+    std::vector<double>      getBlockZ1()                                       const;
+    std::vector<double>      getBlockX2()                                       const;
+    std::vector<double>      getBlockY2()                                       const;
+    std::vector<double>      getBlockZ2()                                       const;
+    std::vector<double>      getBlockSurfaceSize()                              const;
+    std::vector<double>      getCylinderX1()                                    const;
+    std::vector<double>      getCylinderY1()                                    const;
+    std::vector<double>      getCylinderZ1()                                    const;
+    std::vector<double>      getCylinderX2()                                    const;
+    std::vector<double>      getCylinderY2()                                    const;
+    std::vector<double>      getCylinderZ2()                                    const;
+    std::vector<double>      getCylinderRadius()                                const;
+    std::vector<double>      getCylinderSurfaceSize()                           const;
     double                   getMachNumber()                                    const;
     double                   getDynamicViscosity()                              const;
     double                   getStaticTemperature()                             const;

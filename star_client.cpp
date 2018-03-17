@@ -629,13 +629,16 @@ void colorText(const std::string& _text, Color _color){
 
     switch(_color){
         case RED:
-            consoleAttribute = 12 + 0*0xF;
+            consoleAttribute = 0x12 + 0*0xF;
             break;
         case GREEN:
-            consoleAttribute = 2 + 0*0xF;
+            consoleAttribute = 0x2 + 0*0xF;
             break;
         case BLUE:
-            consoleAttribute = 9 + 0*0xF;
+            consoleAttribute = 0x9 + 0*0xF;
+            break;
+        case AQUA:
+            consoleAttribute = 0x3 + 0*0xF;
             break;
         case YELLOW:
             consoleAttribute = 0xE + 0*0xF;
@@ -660,17 +663,31 @@ void colorText(const std::string& _text, Color _color){
     std::string escapeSequence;
 
     // Color escape sequences
-    char blue[] = { 0x1b, '[', '1', ';', '3', '4', 'm', 0 };
-    char normal[] = { 0x1b, '[', '0', ';', '3', '9', 'm', 0 };
+    // ESC[ = Control Sequence Introducer
+    char normal[] = { 0x1b, '[', '0', 'm', 0 };
 
     switch(_color){
         case RED:
-            escapeSequence = blue;
+            escapeSequence = { 0x1b, '[', '9', '1' , ';', '4', '0', 'm', 0 };
+            break;
         case GREEN:
-            escapeSequence = normal;
+            escapeSequence = { 0x1b, '[', '3', '2' , ';', '4', '0', 'm', 0 };
+            break;
+        case BLUE:
+            escapeSequence = { 0x1b, '[', '3', '4' , ';', '4', '0', 'm', 0 };
+            break;
+        case AQUA:
+            escapeSequence = { 0x1b, '[', '9', '6' , ';', '4', '0', 'm', 0 };
+            break;
+        case YELLOW:
+            escapeSequence = { 0x1b, '[', '9', '3' , ';', '4', '0', 'm', 0 };
+            break;
+        case WHITE_BLUE:
+            escapeSequence = { 0x1b, '[', '3', '7' , ';', '1', '0', '4', 'm', 0 };
+            break;
     }
 
     // Print colored text
-    std::cout << escapeSequence << "This text should be blue" << normal << std::endl;
+    std::cout << escapeSequence << _text << normal;
 #endif
 }

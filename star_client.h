@@ -38,6 +38,7 @@ enum Color{
     RED = 0,
     GREEN,
     BLUE,
+    AQUA,
     YELLOW,
     WHITE_BLUE,
 };

@@ -52,7 +52,7 @@ int main(int argc, char * argv[]) {
     // Initialize starJob: get all relevant data for the sim
     StarJob starJob(jobFilePath, batchModeOption);
     if(!initializeStarJob(starJob))
-        exitNow("TERMINATING: cannot load job data");
+        exitNow("TERMINATING: cannot load job data\n");
 
     // Initialize mighty macro using job data and write macro
     MightyMacro mightyMacro(&starJob);
@@ -62,7 +62,7 @@ int main(int argc, char * argv[]) {
     // Connection to ssh server: initialize sshConnection
     SSH sshConnection;
     if(!initializeSSH(sshConnection))
-        exitNow("TERMINATING: SSH connection cannot be established");
+        exitNow("TERMINATING: SSH connection cannot be established\n");
 
     // STAR CCM+ hosts: initialize starHost and write <star_runScript>
     StarHost starHost(batchModeOption);
@@ -74,7 +74,7 @@ int main(int argc, char * argv[]) {
 
     // Fetch results
     if(!fetchResults(sshConnection, starJob))
-        exitNow("\nTERMINATING: error(s) while fetching results");
+        exitNow("\nTERMINATING: error(s) while fetching results\n");
     else
         colorText("FETCHED RESULTS FROM SERVER!\n", GREEN);
 

@@ -103,6 +103,66 @@ std::vector<double> StarJob::getSurfaceSize() const {
     return surfaceSize;
 }
 
+std::vector<double> StarJob::getBlockX1() const {
+    return blockX1;
+}
+
+std::vector<double> StarJob::getBlockY1() const {
+    return blockY1;
+}
+
+std::vector<double> StarJob::getBlockZ1() const {
+    return blockZ1;
+}
+
+std::vector<double> StarJob::getBlockX2() const {
+    return blockX2;
+}
+
+std::vector<double> StarJob::getBlockY2() const {
+    return blockY2;
+}
+
+std::vector<double> StarJob::getBlockZ2() const {
+    return blockZ2;
+}
+
+std::vector<double> StarJob::getBlockSurfaceSize() const {
+    return blockSurfaceSize;
+}
+
+std::vector<double> StarJob::getCylinderX1() const {
+    return cylinderX1;
+}
+
+std::vector<double> StarJob::getCylinderY1() const {
+    return cylinderY1;
+}
+
+std::vector<double> StarJob::getCylinderZ1() const {
+    return cylinderZ1;
+}
+
+std::vector<double> StarJob::getCylinderX2() const {
+    return cylinderX2;
+}
+
+std::vector<double> StarJob::getCylinderY2() const {
+    return cylinderY2;
+}
+
+std::vector<double> StarJob::getCylinderZ2() const {
+    return cylinderZ2;
+}
+
+std::vector<double> StarJob::getCylinderRadius() const {
+    return cylinderRadius;
+}
+
+std::vector<double> StarJob::getCylinderSurfaceSize() const {
+    return cylinderSurfaceSize;
+}
+
 double StarJob::getMachNumber() const {
     return machNumber;
 }
@@ -179,6 +239,9 @@ StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
         // Prism layer defaults
         prismLayers(Default::zeroLayers),
 
+        // Volumetric controls defaults
+        // blockSurfaceSize({Default::surfaceSize}),
+
         // Physics values defaults
         dynamicViscosity(Default::dynamicViscosity),
 
@@ -242,6 +305,18 @@ void StarJob::loadStarJob() {
     bool hasNearWallThickness   = false;
     bool hasTwoSurfaceSizes     = false;
 
+    // Volumentric control options
+    bool hasBeginVolumetricControls = false;
+    bool hasBlock                   = false;
+    bool hasBlockCorner1            = false;
+    bool hasBlockCorner2            = false;
+    bool hasBlockSurfaceSize        = false;
+    bool hasCylinder                = false;
+    bool hasCylinderBase1           = false;
+    bool hasCylinderBase2           = false;
+    bool hasCylinderRadius          = false;
+    bool hasCylinderSurfaceSize     = false;
+
     // Physics model options
     bool hasBeginPhysicsModel = false;
     bool hasDynamicViscosity  = false;
@@ -266,12 +341,13 @@ void StarJob::loadStarJob() {
     bool hasAsymptotycCD          = false;
 
     // Job status options
-    bool jobSetup         = false;
-    bool meshModel        = false;
-    bool physicsModel     = false;
-    bool solverOptions    = false;
-    bool stoppingCriteria = false;
-    bool regions          = false;
+    bool jobSetup           = false;
+    bool meshModel          = false;
+    bool volumetricControls = false;
+    bool physicsModel       = false;
+    bool solverOptions      = false;
+    bool stoppingCriteria   = false;
+    bool regions            = false;
 
     // Parser status
     bool busyElsewhere = false;
@@ -300,10 +376,11 @@ void StarJob::loadStarJob() {
             }
 
             // JOB SETUP
-            busyElsewhere = (hasBeginRegions       ||
-                             hasBeginMeshModel     ||
-                             hasBeginPhysicsModel  ||
-                             hasBeginSolverOptions ||
+            busyElsewhere = (hasBeginRegions            ||
+                             hasBeginMeshModel          ||
+                             hasBeginVolumetricControls ||
+                             hasBeginPhysicsModel       ||
+                             hasBeginSolverOptions      ||
                              hasBeginStoppingCriteria);
             if(!jobSetup && !busyElsewhere){
 
@@ -433,10 +510,11 @@ void StarJob::loadStarJob() {
             }
             // END JOB SETUP
 
-            busyElsewhere = (hasBeginJobSetup      ||
-                             hasBeginMeshModel     ||
-                             hasBeginPhysicsModel  ||
-                             hasBeginSolverOptions ||
+            busyElsewhere = (hasBeginJobSetup           ||
+                             hasBeginMeshModel          ||
+                             hasBeginVolumetricControls ||
+                             hasBeginPhysicsModel       ||
+                             hasBeginSolverOptions      ||
                              hasBeginStoppingCriteria);
             // REGIONS
             if(!regions && !busyElsewhere){
@@ -496,10 +574,11 @@ void StarJob::loadStarJob() {
             // END REGIONS
 
             // MESH MODEL
-            busyElsewhere = (hasBeginJobSetup      ||
-                             hasBeginRegions       ||
-                             hasBeginPhysicsModel  ||
-                             hasBeginSolverOptions ||
+            busyElsewhere = (hasBeginJobSetup           ||
+                             hasBeginRegions            ||
+                             hasBeginVolumetricControls ||
+                             hasBeginPhysicsModel       ||
+                             hasBeginSolverOptions      ||
                              hasBeginStoppingCriteria);
             if(!meshModel && !busyElsewhere){
 
@@ -579,7 +658,7 @@ void StarJob::loadStarJob() {
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Mesh model"
                                                        << std::right << std::setw(mediumColumn) << ".";
                         colorText("Loaded\n", GREEN);
-                        // mesh model complete
+                        // Mesh model complete
                         meshModel = true;
                         hasBeginMeshModel = false;
                     } else {
@@ -598,11 +677,178 @@ void StarJob::loadStarJob() {
             }
             // END MESH MODEL
 
-            // PHYSICS MODEL
+            // VOLUMETRIC CONTROLS
             busyElsewhere = (hasBeginJobSetup      ||
-                             hasBeginRegions       ||
                              hasBeginMeshModel     ||
+                             hasBeginRegions       ||
+                             hasBeginPhysicsModel  ||
                              hasBeginSolverOptions ||
+                             hasBeginStoppingCriteria);
+            if(!volumetricControls && !busyElsewhere) {
+
+                // Check #BEGIN_VOLUMETRIC_CONTROLS tag
+                if(hasBeginStarJob && (word == "#BEGIN_VOLUMETRIC_CONTROLS"))
+                    hasBeginVolumetricControls = true;
+
+                // Check block tag
+                if(hasBeginVolumetricControls && (word == "block")){
+                    hasBlock = true;
+                    // Set block data members to false until data arrives
+                    hasBlockCorner1 = false;
+                    hasBlockCorner2 = false;
+                    hasBlockSurfaceSize = false;
+                }
+
+                // Check block corner_1
+                if(hasBeginVolumetricControls && (word == "corner_1")){
+                    int coordinates = 0;
+                    while((issLine >> word) && coordinates < 3){
+                        if(coordinates == 0)
+                            blockX1.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 1)
+                            blockY1.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 2){
+                            blockZ1.emplace_back((std::stod(word, nullptr)));
+                            hasBlockCorner1 = true;
+                        }
+                        coordinates++;
+                    }
+                    // Check all coordinates
+                    if(coordinates != 3)
+                        throw "<corner_1> is missing data";
+                }
+
+                // Check block corner_2
+                if(hasBeginVolumetricControls && (word == "corner_2")){
+                    int coordinates = 0;
+                    while((issLine >> word) && coordinates < 3){
+                        if(coordinates == 0)
+                            blockX2.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 1)
+                            blockY2.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 2){
+                            blockZ2.emplace_back((std::stod(word, nullptr)));
+                            hasBlockCorner2 = true;
+                        }
+                        coordinates++;
+                    }
+                    // Check all coordinates
+                    if(coordinates != 3)
+                        throw "<corner_2> is missing data";
+                }
+
+                // Check block_surface_size
+                if(hasBeginVolumetricControls && (word == "block_surface_size")){
+                    if(issLine >> word){
+                        blockSurfaceSize.emplace_back(std::stod(word, nullptr));
+                        hasBlockSurfaceSize = true;
+                    } else
+                        throw "block <surface_size> is empty";
+                }
+
+                // Check cylinder tag
+                if(hasBeginVolumetricControls && (word == "cylinder")){
+                    hasCylinder = true;
+                    // Set cylinder data members to false until data arrives
+                    hasCylinderBase1       = false;
+                    hasCylinderBase2       = false;
+                    hasCylinderRadius      = false;
+                    hasCylinderSurfaceSize = false;
+                }
+
+                // Check cylinder base_1
+                if(hasBeginVolumetricControls && (word == "base_1")){
+                    int coordinates = 0;
+                    while((issLine >> word) && coordinates < 3){
+                        if(coordinates == 0)
+                            cylinderX1.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 1)
+                            cylinderY1.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 2){
+                            cylinderZ1.emplace_back((std::stod(word, nullptr)));
+                            hasCylinderBase1 = true;
+                        }
+                        coordinates++;
+                    }
+                    // Check all coordinates
+                    if(coordinates != 3)
+                        throw "<base_1> is missing data";
+                }
+
+                // Check cylinder base_2
+                if(hasBeginVolumetricControls && (word == "base_2")){
+                    int coordinates = 0;
+                    while((issLine >> word) && coordinates < 3){
+                        if(coordinates == 0)
+                            cylinderX2.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 1)
+                            cylinderY2.emplace_back(std::stod(word, nullptr));
+                        else if(coordinates == 2){
+                            cylinderZ2.emplace_back((std::stod(word, nullptr)));
+                            hasCylinderBase2 = true;
+                        }
+                        coordinates++;
+                    }
+                    // Check all coordinates
+                    if(coordinates != 3)
+                        throw "<base_2> is missing data";
+                }
+
+                // Check radius tag
+                if(hasBeginVolumetricControls && (word == "radius")){
+                    if(issLine >> word){
+                        cylinderRadius.emplace_back(std::stod(word, nullptr));
+                        hasCylinderRadius = true;
+                    } else
+                        throw "<radius> is empty";
+                }
+
+                // Check surface_size
+                if(hasBeginVolumetricControls && (word == "cylinder_surface_size")){
+                    if(issLine >> word){
+                        cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
+                        hasCylinderSurfaceSize = true;
+                    } else
+                        throw "cylinder <surface_size> is empty";
+                }
+
+                // Check ##END_VOLUMETRIC_CONTROLS tag
+                if(hasBeginVolumetricControls && (word == "#END_VOLUMETRIC_CONTROLS")){
+                    // Check missing data
+                    if(!hasBlock && (hasBlockCorner1 || hasBlockCorner2 || hasBlockSurfaceSize))
+                        throw "no <block> tag";
+                    if(!hasBlockCorner1 && (hasBlock || hasBlockCorner2 || hasBlockSurfaceSize))
+                        throw "<corner_1> is missing";
+                    if(!hasBlockCorner2 && (hasBlock || hasBlockCorner1 || hasBlockSurfaceSize))
+                        throw "<corner_2> is missing";
+                    if(!hasBlockSurfaceSize && (hasBlock || hasBlockCorner1 || hasBlockCorner2))
+                        throw "block <surface_size> is missing";
+                    if(!hasCylinder && (hasCylinderBase1 || hasCylinderBase2 || hasCylinderRadius || hasCylinderSurfaceSize))
+                        throw "no <cylinder> tag";
+                    if(!hasCylinderBase1 && (hasCylinder || hasCylinderBase2 || hasCylinderRadius || hasCylinderSurfaceSize))
+                        throw "<base_1> is missing";
+                    if(!hasCylinderBase2 && (hasCylinder || hasCylinderBase1 || hasCylinderRadius || hasCylinderSurfaceSize))
+                        throw "<base_2> is missing";
+                    if(!hasCylinderRadius && (hasCylinder || hasCylinderBase1 || hasCylinderBase2 || hasCylinderSurfaceSize))
+                        throw "<radius> is missing";
+                    if(!hasCylinderSurfaceSize && (hasCylinder || hasCylinderBase1 || hasCylinderBase2 || hasCylinderRadius))
+                        throw "cylinder <surface_size> is missing";
+
+                    std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Volumetric controls"
+                              << std::right << std::setw(mediumColumn) << ".";
+                    colorText("Loaded\n", GREEN);
+                    // Volumetric controls complete
+                    hasBeginVolumetricControls = false;
+                }
+
+            }
+
+            // PHYSICS MODEL
+            busyElsewhere = (hasBeginJobSetup           ||
+                             hasBeginRegions            ||
+                             hasBeginMeshModel          ||
+                             hasBeginVolumetricControls ||
+                             hasBeginSolverOptions      ||
                              hasBeginStoppingCriteria);
             if(!physicsModel && !busyElsewhere){
 
@@ -732,10 +978,11 @@ void StarJob::loadStarJob() {
             // END PHYSICS MODEL
 
             // SOLVER OPTION (OPTIONAL)
-            busyElsewhere = (hasBeginJobSetup     ||
-                             hasBeginRegions      ||
-                             hasBeginMeshModel    ||
-                             hasBeginPhysicsModel ||
+            busyElsewhere = (hasBeginJobSetup           ||
+                             hasBeginRegions            ||
+                             hasBeginMeshModel          ||
+                             hasBeginVolumetricControls ||
+                             hasBeginPhysicsModel       ||
                              hasBeginStoppingCriteria);
             if(!solverOptions && !busyElsewhere){
 
@@ -772,10 +1019,11 @@ void StarJob::loadStarJob() {
             // END SOLVER OPTION
 
             // STOPPING CRITERIA
-            busyElsewhere = (hasBeginJobSetup     ||
-                             hasBeginRegions      ||
-                             hasBeginMeshModel    ||
-                             hasBeginPhysicsModel ||
+            busyElsewhere = (hasBeginJobSetup           ||
+                             hasBeginRegions            ||
+                             hasBeginMeshModel          ||
+                             hasBeginVolumetricControls ||
+                             hasBeginPhysicsModel       ||
                              hasBeginSolverOptions);
             if(!stoppingCriteria && !busyElsewhere){
 
@@ -914,7 +1162,7 @@ void StarJob::printJobData(){
     // Region data
     printTwoColumns(" REGIONS", " ", '-');
     printThreeColumns("Region", "Boundary", "Surface Size");
-    for(int i = 0; i < getRegionName().size(); i++){
+    for(int i = 0; i < regionName.size(); i++){
         printThreeColumns(regionName[i], boundaryCondition[i], std::to_string(surfaceSize[i]) + " m");
     }
     std::cout << std::endl;
@@ -925,6 +1173,36 @@ void StarJob::printJobData(){
         printTwoColumns("Prism layers:", std::to_string(prismLayers));
         printTwoColumns("PL thickness:", std::to_string(prismLayerThickness) + " m");
         printTwoColumns("Near wall thickness:", std::to_string(nearWallThickness) + " m");
+    }
+    std::cout << std::endl;
+
+    // Volumetric controls
+    if(!blockSurfaceSize.empty() || !cylinderSurfaceSize.empty())
+        printTwoColumns("VOLUMETRIC CONTROLS", " ", '-');
+
+    if(!blockSurfaceSize.empty()){
+        for(int i = 0; i < blockSurfaceSize.size(); i++){
+            printTwoColumns("Block " + std::to_string(i + 1) + ":", "surface size = " +
+                    std::to_string(blockSurfaceSize[i]) + " m");
+            colorText("Corners\n", AQUA);
+            printThreeColumns("X [m]", "Y [m]", "Z [m]");
+            printThreeColumns(std::to_string(blockX1[i]), std::to_string(blockY1[i]), std::to_string(blockZ1[i]));
+            printThreeColumns(std::to_string(blockX2[i]), std::to_string(blockY2[i]), std::to_string(blockZ2[i]));
+            std::cout << std::endl;
+        }
+    }
+
+    if(!cylinderSurfaceSize.empty()){
+        for(int i = 0; i < cylinderSurfaceSize.size(); i++){
+            printTwoColumns("Cylinder " + std::to_string(i + 1) + ":", "surface size = " +
+                                                                    std::to_string(cylinderSurfaceSize[i]) + " m");
+            printTwoColumns("", "      radius = " + std::to_string(cylinderRadius[i]) + " m");
+            colorText("Axis\n", AQUA);
+            printThreeColumns("X [m]", "Y [m]", "Z [m]");
+            printThreeColumns(std::to_string(cylinderX1[i]), std::to_string(cylinderY1[i]), std::to_string(cylinderZ1[i]));
+            printThreeColumns(std::to_string(cylinderX2[i]), std::to_string(cylinderY2[i]), std::to_string(cylinderZ2[i]));
+            std::cout << std::endl;
+        }
     }
 
     // If batch mode, just wait Default::pauseTime, otherwise expect user input

@@ -29,11 +29,14 @@ namespace Default{
     constexpr double  minimumThickness        (5);
     constexpr double  layerChoppingPercentage (10);
 
-    // ---------- PHYSICS VALUES
-    constexpr double dynamicViscosity (-1e3); // Negative means field is missing (inviscid)
-
     // ---------- NO PRISM LAYER BY DEFAULT
     constexpr int zeroLayers(0);
+
+    // ---------- VOLUMETRIC CONTROLS
+    constexpr double surfaceSize (-1e-3); // Negative means no volumetric control
+
+    // ---------- PHYSICS VALUES
+    constexpr double dynamicViscosity (-1e3); // Negative means field is missing (inviscid)
 
     // ---------- SOLUTION MONITORS
 
