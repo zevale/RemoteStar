@@ -20,28 +20,34 @@ symmetry_plane          Sym
 #BEGIN_MESH_MODEL
 base_size               0.5
 num_prism_layers        10
-prism_layer_thickness   0.05
+prism_layer_thickness   0.01
 near_wall_thickness     0.000077
-surface_size            SurfMesh        0.01
+surface_size            SurfMesh        0.05
 surface_size            FarField        3
 surface_size            Sym             3
 #END_MESH_MODEL
 
 #BEGIN_VOLUMETRIC_CONTROLS
 block
-corner_1           -1.00  -0.25 -0.75
-corner_2            3.00   1.60  0.75
-block_surface_size  0.05
+corner_1              -1.00  -0.25 -0.75
+corner_2               3.00   1.60  0.75
+block_surface_size     0.05
 
 cylinder
-base_1                 0.50 -0.25  0.00
-base_2                 0.50  3.00  0.00
+base_1                 0    -0.25  0
+base_2                 0     3.00  0
 radius                 5
 cylinder_surface_size  0.1
+
+cylinder
+base_1                 0     0     0
+base_2                 0.70  1.20  0
+radius                 0.15
+cylinder_surface_size  0.01
 #END_VOLUMETRIC_CONTROLS
 
 #BEGIN_PHYSICS_MODEL
-
+dynamic_viscosity       0.0000639
 static_temperature      255.5555556
 reference_pressure      315979.763
 reference_velocity      269.1225173
