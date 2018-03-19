@@ -11,29 +11,31 @@ Block VolumetricControls::getBlock() const {
     return block;
 }
 
+Cylinder VolumetricControls::getCylinder() const {
+    return cylinder;
+}
+
 std::vector<std::string> VolumetricControls::volumetricControlsCode() {
     std::vector<std::string> code;
     std::vector<std::string> codeBuffer;
 
-    // Check block exists
-    if(!block.surfaceSize.empty()){
-        code = {
-                "    private void volumetricControls(){",
-                "        Simulation activeSimulation = getActiveSimulation();",
-                "",
-                "        // Get mesh part factory object",
-                "        MeshPartFactory meshPartFactoryObj = activeSimulation.get(MeshPartFactory.class);",
-                "",
-                "        // Get length units",
-                "        Units unitsObj = activeSimulation.getUnitsManager().getPreferredUnits(new IntVector(new int[] {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));",
-                "",
-                "        // Get coordinate system",
-                "        LabCoordinateSystem labCoordinateSystemObj = activeSimulation.getCoordinateSystemManager().getLabCoordinateSystem();",
-                "",
-                "        // Get mesh continuum object",
-                "        MeshContinuum meshContinuumObj = ((MeshContinuum) activeSimulation.getContinuumManager().getContinuum(\"Mesh 1\"));"
-        };
-    }
+    // Check volumetric controls
+    code = {
+            "    private void volumetricControls(){",
+            "        Simulation activeSimulation = getActiveSimulation();",
+            "",
+            "        // Get mesh part factory object",
+            "        MeshPartFactory meshPartFactoryObj = activeSimulation.get(MeshPartFactory.class);",
+            "",
+            "        // Get length units",
+            "        Units unitsObj = activeSimulation.getUnitsManager().getPreferredUnits(new IntVector(new int[] {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));",
+            "",
+            "        // Get coordinate system",
+            "        LabCoordinateSystem labCoordinateSystemObj = activeSimulation.getCoordinateSystemManager().getLabCoordinateSystem();",
+            "",
+            "        // Get mesh continuum object",
+            "        MeshContinuum meshContinuumObj = ((MeshContinuum) activeSimulation.getContinuumManager().getContinuum(\"Mesh 1\"));"
+    };
 
     // Blocks
     if(!block.surfaceSize.empty()){
@@ -54,6 +56,7 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
             std::string volumeSourceSizeObj("volumeSourceSizeObj_B" + std::to_string(i+1));
             std::string absoluteSizeObj("absoluteSizeObj_B" + std::to_string(i+1));
             std::string volumeSourceResurfacerSizeOptionObj("volumeSourceResurfacerSizeOptionObj_B" + std::to_string(i+1));
+            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionCylinderObj_B" + std::to_string(i+1));
             codeBuffer = {
                     "",
                     "        /*",
@@ -99,7 +102,10 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
                     "        " + absoluteSizeObj + ".getValue().setValue(" + valueSurfaceSize + ");",
                     "        // Surface remesher",
                     "        VolumeSourceResurfacerSizeOption " + volumeSourceResurfacerSizeOptionObj + " = " + volumeSourceObj + ".get(MeshConditionManager.class).get(VolumeSourceResurfacerSizeOption.class);",
-                    "        " + volumeSourceResurfacerSizeOptionObj + ".setVolumeSourceResurfacerSizeOption(true);"
+                    "        " + volumeSourceResurfacerSizeOptionObj + ".setVolumeSourceResurfacerSizeOption(true);",
+                    "        // Surface wrapper",
+                    "        VolumeSourceSurfaceWrapperSizeOption " + volumeSourceSurfaceWrapperSizeOptionObj + " = " + volumeSourceObj + ".get(MeshConditionManager.class).get(VolumeSourceSurfaceWrapperSizeOption.class);",
+                    "        " + volumeSourceSurfaceWrapperSizeOptionObj + ".setVolumeSourceSurfaceWrapperSizeOption(true);"
             };
             code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
         }
@@ -125,6 +131,7 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
             std::string volumeSourceSizeCylinderObj("volumeSourceSizeCylinderObj_C" + std::to_string(i+1));
             std::string absoluteSizeCylinderObj("absoluteSizeCylinderObj_C" + std::to_string(i+1));
             std::string volumeSourceResurfacerSizeOptionCylinderObj("volumeSourceResurfacerSizeOptionCylinderObj_C" + std::to_string(i+1));
+            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionObj_C" + std::to_string(i+1));
             codeBuffer = {
                     "",
                     "        /*",
@@ -175,7 +182,10 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
                     "         " + absoluteSizeCylinderObj + ".getValue().setValue(" + valueSurfaceSize + ");",
                     "         // Surface remesher",
                     "         VolumeSourceResurfacerSizeOption " + volumeSourceResurfacerSizeOptionCylinderObj + " = " + volumeSourceCylinderObj+ ".get(MeshConditionManager.class).get(VolumeSourceResurfacerSizeOption.class);",
-                    "         " + volumeSourceResurfacerSizeOptionCylinderObj + ".setVolumeSourceResurfacerSizeOption(true);"
+                    "         " + volumeSourceResurfacerSizeOptionCylinderObj + ".setVolumeSourceResurfacerSizeOption(true);",
+                    "        // Surface wrapper",
+                    "        VolumeSourceSurfaceWrapperSizeOption " + volumeSourceSurfaceWrapperSizeOptionObj + " = " + volumeSourceCylinderObj + ".get(MeshConditionManager.class).get(VolumeSourceSurfaceWrapperSizeOption.class);",
+                    "        " + volumeSourceSurfaceWrapperSizeOptionObj + ".setVolumeSourceSurfaceWrapperSizeOption(true);"
             };
             code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
         }

@@ -222,7 +222,7 @@ void MightyMacro::writeExecute() {
     };
 
     // Check volumetric controls
-    if(!volumetricControls.getBlock().surfaceSize.empty())
+    if(!volumetricControls.getBlock().surfaceSize.empty() || !volumetricControls.getCylinder().surfaceSize.empty())
         code.emplace_back("        volumetricControls();");
 
     codeBuffer = {
@@ -299,7 +299,7 @@ void MightyMacro::writeMeshValues() {
 
 void MightyMacro::writeVolumetricControls() {
     // Check volumetric control options
-    if(!volumetricControls.getBlock().surfaceSize.empty()){
+    if(!volumetricControls.getBlock().surfaceSize.empty() || !volumetricControls.getCylinder().surfaceSize.empty()){
         writeToFile(volumetricControls.volumetricControlsCode());
     }
 }

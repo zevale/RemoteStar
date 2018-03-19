@@ -19,8 +19,8 @@ public:
     explicit VolumetricControls(const Block& _block = {}, const Cylinder& _cylinder = {});
 
     // Getters
-    Block getBlock() const;
-
+    Block    getBlock()    const;
+    Cylinder getCylinder() const;
     std::vector<std::string> volumetricControlsCode();
 };
 

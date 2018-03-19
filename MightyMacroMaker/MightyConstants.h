@@ -24,6 +24,9 @@ namespace Default{
     constexpr bool autoSaveMesh       (true);
     constexpr bool autoSaveSimulation (true);
 
+    // ---------- SURFACE SIZE
+    constexpr double minimumTargetSurfaceSize (0.001); // [m]
+
     // ---------- PRISM LAYER MESH (STANDARD CONFIG AS PER SIEMENS RECOMMENDATIONS)
     constexpr double  boundaryMarchAngle      (85);
     constexpr double  minimumThickness        (5);
