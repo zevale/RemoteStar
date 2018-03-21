@@ -3,7 +3,7 @@
 #BEGIN_JOB_SETUP
 job_name                mightySim
 client_directory        C:\Users\Nuno\Desktop\ClientStar\
-server_directory        C:/Users/Nuno/Desktop/ClientStar/
+server_directory        /home/nuno/Desktop/RemoteStar/
 save_sim_file           yes
 clean_server            yes
 auto_save               yes
@@ -16,13 +16,13 @@ wall                    SurfMesh
 free_stream             FarField
 symmetry_plane          Sym
 #END_REGIONS
-
+S
 #BEGIN_MESH_MODEL
 base_size               0.5
 num_prism_layers        10
 prism_layer_thickness   0.01
 near_wall_thickness     0.000077
-surface_size            SurfMesh        0.05
+surface_size            SurfMesh        0.025
 surface_size            FarField        3
 surface_size            Sym             3
 #END_MESH_MODEL

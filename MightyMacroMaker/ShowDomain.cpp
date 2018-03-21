@@ -7,6 +7,26 @@ ShowDomain::ShowDomain(const std::vector<std::string>& _regionName,
 std::vector<std::string> ShowDomain::showDomainCode() {
     std::vector<std::string> code;
     std::vector<std::string> codeBuffer;
+
+     // Check if there are curve parts
+    bool hasDomainEdges  = false;
+    bool hasIntersection = false;
+    int numFreeStreamBoundaries = 0;
+    for(const std::string& currentBoundaryCondition : boundaryCondition) {
+         // One symmetry plane
+        if(currentBoundaryCondition == "symmetryPlane"){
+            hasDomainEdges = true;
+            hasIntersection = true;
+        }
+
+         // Count free stream
+        if(currentBoundaryCondition == "freeStream")
+            numFreeStreamBoundaries++;
+
+        if(numFreeStreamBoundaries > 1)
+            hasDomainEdges = true;
+    }
+
     code = {
             "",
             "    private void showDomain(){",
@@ -20,14 +40,39 @@ std::vector<std::string> ShowDomain::showDomainCode() {
             "",
             "        // Get object",
             "        MeshOperationPart meshOperationPartObj = ((MeshOperationPart) activeSimulation.get(SimulationPartManager.class).getPart(\"Subtract\"));"
-                    "",
-            "        // Select curve parts",
-            "        PartCurve partCurveDomainEdges = meshOperationPartObj.getPartCurveManager().getPartCurve(\"Domain.Edges\");",
-            "        PartCurve partCurveIntersection = meshOperationPartObj.getPartCurveManager().getPartCurve(\"Intersection\");"
     };
 
-    // inPutParts will hold all the part curve and part surface objects
-    std::string inputParts("partCurveDomainEdges, partCurveIntersection, ");
+    if(hasDomainEdges || hasIntersection){
+        codeBuffer = {
+                "",
+                "        // Select curve parts"
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
+     // Add domain edges
+    if(hasDomainEdges)
+        code.emplace_back("        PartCurve partCurveDomainEdges = meshOperationPartObj.getPartCurveManager().getPartCurve(\"Domain.Edges\");");
+
+     // Add intersection curve
+    if(hasIntersection)
+        code.emplace_back("        PartCurve partCurveIntersection = meshOperationPartObj.getPartCurveManager().getPartCurve(\"Intersection\");");
+
+     // Select surface parts
+    codeBuffer = {
+            "",
+            "        // Select surface parts"
+    };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
+     // inPutParts will hold all the part curve and part surface objects
+    std::string inputParts;
+    if(hasDomainEdges && hasIntersection)
+        inputParts = "partCurveDomainEdges, partCurveIntersection, ";
+    if (hasDomainEdges && !hasIntersection)
+        inputParts = "partCurveDomainEdges, ";
+    if (!hasDomainEdges && hasIntersection)
+        inputParts = "partCurveIntersection, ";
 
     // Select aircraft surface which corresponds to first entry
     code.emplace_back( "        PartSurface partSurface" + regionName[0] + " = ((PartSurface) meshOperationPartObj.getPartSurfaceManager().getPartSurface(\"" + regionName[0] + ".Surface\"));");
@@ -55,56 +100,3 @@ std::vector<std::string> ShowDomain::showDomainCode() {
 
     return code;
 }
-
-// // NO SYMMETRY PLANE
-//
-// // Check if there are curve parts
-//bool hasDomainEdges  = false;
-//bool hasIntersection = false;
-//int numFreeStreamBoundaries = 0;
-//for(const std::string& currentBoundaryCondition : boundaryCondition) {
-// // One symmetry plane
-//if(currentBoundaryCondition == "symmetryPlane"){
-//hasDomainEdges = true;
-//hasIntersection = true;
-//}
-//
-// // Count free stream
-//if(currentBoundaryCondition == "freeStream")
-//numFreeStreamBoundaries++;
-//
-//if(numFreeStreamBoundaries > 1)
-//hasDomainEdges = true;
-//}
-//
-//if(hasDomainEdges || hasIntersection){
-//codeBuffer = {
-//        "",
-//        "        // Select curve parts"
-//};
-//code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
-//}
-//
-// // Add domain edges
-//if(hasDomainEdges)
-//code.emplace_back("        PartCurve partCurveDomainEdges = meshOperationPartObj.getPartCurveManager().getPartCurve(\"Domain.Edges\");");
-//
-// // Add intersection curve
-//if(hasIntersection)
-//code.emplace_back("        PartCurve partCurveIntersection = meshOperationPartObj.getPartCurveManager().getPartCurve(\"Intersection\");");
-//
-// // Select surface parts
-//codeBuffer = {
-//        "",
-//        "        // Select surface parts"
-//};
-//code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
-//
-// // inPutParts will hold all the part curve and part surface objects
-//std::string inputParts;
-//if(hasDomainEdges && hasIntersection)
-//inputParts = "partCurveDomainEdges, partCurveIntersection, ";
-//if (hasDomainEdges && !hasIntersection)
-//inputParts = "partCurveDomainEdges, ";
-//if (!hasDomainEdges && hasIntersection)
-//inputParts = "partCurveIntersection, ";

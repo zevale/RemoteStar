@@ -31,6 +31,7 @@
 #include "StoppingCriteria.h"
 #include "ExportResults.h"
 #include "CloseSim.h"
+#include "MightyScene.h"
 
 class MightyMacro {
 private:
@@ -50,6 +51,7 @@ private:
     PhysicsValues      physicsValues;
     SolverOptions      solverOptions;
     SolutionMonitors   solutionMonitors;
+    MightyScene        mightyScene;
     StoppingCriteria   stoppingCriteria;
     ExportResults      exportResults;
     CloseSim           closeSim;
@@ -82,6 +84,7 @@ private:
     void          writeSolutionMonitors();
     void          writeStoppingCriteria();
     void          writeGenerateMesh();
+    void          writeMightyScene();
     void          writeRunSimulation();
     void          writeExportResults();
     void          writeCloseSim();

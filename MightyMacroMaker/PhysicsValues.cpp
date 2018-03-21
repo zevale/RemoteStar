@@ -125,5 +125,12 @@ std::vector<std::string> PhysicsValues::physicsValuesCode() {
     }
     code.emplace_back("    }");
 
+    // Create mach number scene
+    codeBuffer = {
+            "",
+            "        // MACH NUMBER SCENE",
+            "",
+    };
+
     return code;
 }

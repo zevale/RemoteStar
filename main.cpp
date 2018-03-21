@@ -58,25 +58,24 @@ int main(int argc, char * argv[]) {
     MightyMacro mightyMacro(&starJob);
     mightyMacro.writeMacro();
 
+    // Connection to ssh server: initialize sshConnection
+    SSH sshConnection;
+    if(!initializeSSH(sshConnection))
+        exitNow("TERMINATING: SSH connection cannot be established\n");
 
-//    // Connection to ssh server: initialize sshConnection
-//    SSH sshConnection;
-//    if(!initializeSSH(sshConnection))
-//        exitNow("TERMINATING: SSH connection cannot be established\n");
-//
-//    // STAR CCM+ hosts: initialize starHost and write <star_runScript>
-//    StarHost starHost(batchModeOption);
-//    if(!initializeStarHost(starHost, starJob))
-//        exitNow("TERMINATING: cannot initialize hosts");
-//
-//    // Submit job
-//    submitJob(sshConnection, starJob);
-//
-//    // Fetch results
-//    if(!fetchResults(sshConnection, starJob))
-//        exitNow("\nTERMINATING: error(s) while fetching results\n");
-//    else
-//        colorText("FETCHED RESULTS FROM SERVER!\n", GREEN);
+    // STAR CCM+ hosts: initialize starHost and write <star_runScript>
+    StarHost starHost(batchModeOption);
+    if(!initializeStarHost(starHost, starJob))
+        exitNow("TERMINATING: cannot initialize hosts");
+
+    // Submit job
+    submitJob(sshConnection, starJob);
+
+    // Fetch results
+    if(!fetchResults(sshConnection, starJob))
+        exitNow("\nTERMINATING: error(s) while fetching results\n");
+    else
+        colorText("FETCHED RESULTS FROM SERVER!\n", GREEN);
 
     return EXIT_SUCCESS;
 }

@@ -49,4 +49,4 @@ add_executable(RemoteStar
         MightyMacroMaker/StoppingCriteria.h
         MightyMacroMaker/StoppingCriteria.cpp
         MightyMacroMaker/VolumetricControls.cpp
-        MightyMacroMaker/VolumetricControls.h)
+        MightyMacroMaker/VolumetricControls.h MightyMacroMaker/MightyScene.cpp MightyMacroMaker/MightyScene.h)

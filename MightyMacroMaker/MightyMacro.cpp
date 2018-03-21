@@ -121,6 +121,9 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                         // Boundary condition
                                         currentStarJob->getBoundaryCondition());
 
+    // Create scenes assignment
+    mightyScene = MightyScene(currentStarJob->getRegionName());
+
     // Stopping criteria assignment (maxSteps, number of samples for asymptotic convergence, asymptotic convergence)
     stoppingCriteria = StoppingCriteria(currentStarJob->getMaxSteps(),
                                         currentStarJob->getNumSamples(),
@@ -159,6 +162,7 @@ void MightyMacro::writeMacro() {
     writeSolutionMonitors();
     writeStoppingCriteria();
     writeGenerateMesh();
+    writeMightyScene();
     writeRunSimulation();
     writeExportResults();
     writeCloseSim();
@@ -231,6 +235,7 @@ void MightyMacro::writeExecute() {
             "        solutionMonitors();",
             "        stoppingCriteria();",
             "        generateMesh();",
+            "        createScenes();",
             "        runSimulation();",
             "        exportResults();",
             "        closeSimulation();",
@@ -338,6 +343,10 @@ void MightyMacro::writeGenerateMesh() {
             "    }"
     };
     writeToFile(code);
+}
+
+void MightyMacro::writeMightyScene() {
+    writeToFile(mightyScene.mightySceneCode());
 }
 
 void MightyMacro::writeRunSimulation() {

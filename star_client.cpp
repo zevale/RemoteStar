@@ -629,7 +629,7 @@ void colorText(const std::string& _text, Color _color){
 
     switch(_color){
         case RED:
-            consoleAttribute = 0x12 + 0*0xF;
+            consoleAttribute = 0xC + 0*0xF;
             break;
         case GREEN:
             consoleAttribute = 0x2 + 0*0xF;
