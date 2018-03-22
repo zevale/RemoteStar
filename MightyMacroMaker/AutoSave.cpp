@@ -24,7 +24,7 @@ std::vector<std::string> AutoSave::autoSaveCode() {
             "        boolean autoSaveSimulation = " + std::string((autoSaveSimulation? "true" : "false")) + ";",
             "",
             "        // Save simulation now",
-            "        activeSimulation.saveState(resolvePath(saveSimPath));"
+            "        activeSimulation.saveState(resolvePath(saveSimPath));",
             "",
             "        // Get auto save object",
             "        AutoSave autoSave = activeSimulation.getSimulationIterator().getAutoSave();",

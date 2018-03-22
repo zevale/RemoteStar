@@ -442,11 +442,18 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         std::string sheBang = "#!/bin/sh\n";
         std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
         std::string starLicense = "-power ";
-        std::string starExit = "";
+//        std::string starExit = "";
         std::string starInfiniBand = "-fabric IBV ";
         std::string starHost;
         std::string starMacro = " -batch ";
         std::string macroPath = _starJob.getServerJobDirectory("resources/MightyMacro.java");
+        std::string initializationJobPath = (_starJob.getInitializationJob() == Default::initializationJob)?
+                                            // No initialization file
+                                            "" :
+                                            // Open initialization file in original folder
+                                            " " + _starJob.getServerDirectory() +
+                                                    _starJob.getInitializationJob() + "/" +
+                                                    _starJob.getInitializationJob() + ".sim";
 
         // Generate host list
         int nHosts = _starHost.getNumHosts();
@@ -469,7 +476,7 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         }
         // Output to file and close
         shellRunScriptFile.write(sheBang.c_str(), sheBang.size());
-        std::string runCommand(starPath + starLicense + starExit + starHost + starMacro + macroPath);
+        std::string runCommand(starPath + starLicense + starHost + starMacro + macroPath + initializationJobPath);
         shellRunScriptFile.write(runCommand.c_str(), runCommand.size());
         shellRunScriptFile.close();
     } catch (const char* loadHostException) {
@@ -501,16 +508,20 @@ int initializeStarJob(StarJob& _starJob) {
         // Load job
         _starJob.loadStarJob();
 
-        // Check aircraft geometry
-        std::string test = _starJob.getClientJobDirectory("resources" + std::string(CrossPlatform::separator)
-                                                          + "SurfMesh.stl");
-        if(!fileExists(test))
-            throw "Aircraft geometry not found";
+        // If there is no initialization, check resources
+        if(_starJob.getInitializationJob() == Default::initializationJob){
+            // Check aircraft geometry
+            std::string test = _starJob.getClientJobDirectory("resources" + std::string(CrossPlatform::separator)
+                                                              + "SurfMesh.stl");
+            if(!fileExists(test))
+                throw "Aircraft geometry not found";
 
-        // Check domain geometry
-        if(!fileExists(_starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)
-                                                      + "DomainGeometry.x_b")))
-            throw "Domain geometry not found";
+            // Check domain geometry
+            test = _starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)
+                                                  + "DomainGeometry.x_b");
+            if(!fileExists(test))
+                throw "Domain geometry not found";
+        }
 
     } catch(const char * loadJobException) {
         // Error loading hosts from <star_hostList>
@@ -559,7 +570,7 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
 }
 
 /*
- * initializeStarHost()
+ * fetchResults()
  *
  * DESCRIPTION
  * Gets the results from the server

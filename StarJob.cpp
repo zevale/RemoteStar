@@ -1,6 +1,7 @@
 #include "StarJob.h"
 #include "MightyMacroMaker/MightyConstants.h"
 #include "star_client.h"
+#include "MightyMacroMaker/MightyMath.h"
 
 #include <fstream>
 #include <iostream>
@@ -25,6 +26,14 @@
  */
 std::string StarJob::getJobName() const {
     return jobName;
+}
+
+std::string StarJob::getInitializationJob() const {
+    return initializationJob;
+}
+
+bool StarJob::getNewMesh() const {
+    return newMesh;
 }
 
 std::string StarJob::getClientDirectory() const {
@@ -228,8 +237,13 @@ double StarJob::getAsymptoticCD() const {
  * is in the current directory by default
  */
 StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
+        // Command line arguments
         jobFilePath    (_jobFilePath),
         batchModeOption(_batchMode),
+
+        // Initialization job defaults
+        initializationJob(Default::initializationJob),
+        newMesh           (Default::newMesh),
 
         // Auto save defaults (might not be assigned by user)
         autoSaveSimulation(Default::autoSaveSimulation),
@@ -284,6 +298,7 @@ void StarJob::loadStarJob() {
     // Setup options
     bool hasBeginJobSetup      = false;
     bool hasJobName            = false;
+    bool hasInitialization     = false;
     bool hasClientDirectory    = false;
     bool hasServerDirectory    = false;
     bool hasSaveSimFile        = false;
@@ -341,13 +356,14 @@ void StarJob::loadStarJob() {
     bool hasAsymptotycCD          = false;
 
     // Job status options
-    bool jobSetup           = false;
-    bool meshModel          = false;
-    bool volumetricControls = false;
-    bool physicsModel       = false;
-    bool solverOptions      = false;
-    bool stoppingCriteria   = false;
-    bool regions            = false;
+    bool jobSetup              = false;
+    bool meshModel             = false;
+    bool volumetricControls    = false;
+    bool hasVolumetricControls = false;
+    bool physicsModel          = false;
+    bool solverOptions         = false;
+    bool stoppingCriteria      = false;
+    bool regions               = false;
 
     // Parser status
     bool busyElsewhere = false;
@@ -395,6 +411,15 @@ void StarJob::loadStarJob() {
                         hasJobName = true;
                     } else
                         throw "<job_name> is empty";
+                }
+
+                // Check for initialization_job
+                if(hasBeginJobSetup && (word == "initialization_job")){
+                    if(issLine >> word) {
+                        initializationJob = word;
+                        hasInitialization = true;
+                    } else
+                        throw "<initialization_job> is empty";
                 }
 
                 // Check for client_directory
@@ -838,6 +863,7 @@ void StarJob::loadStarJob() {
                               << std::right << std::setw(mediumColumn) << ".";
                     colorText("Loaded\n", GREEN);
                     // Volumetric controls complete
+                    hasVolumetricControls = true;
                     hasBeginVolumetricControls = false;
                 }
 
@@ -1104,15 +1130,23 @@ void StarJob::loadStarJob() {
     if(!jobSetup)
         throw "job setup is missing";
     if(!regions)
-        throw "regions' section is missing";
-    if(!meshModel)
+        throw "regions section is missing";
+    if(!meshModel && !hasInitialization)
         throw "mesh model is missing";
+    if(!physicsModel)
+        throw "physics model is missing";
     if(!stoppingCriteria)
         throw "stopping criteria is missing";
 
-    // CHECK REGION NAME AND SURFACE NAME ARE THE SAME
-    if(regionName != surfaceName)
-        throw "region names and surface names are not the same";
+    // Check newMesh
+    if(hasInitialization && !meshModel && !hasVolumetricControls)
+        newMesh = false;
+
+    if(newMesh && meshModel){
+        // CHECK REGION NAME AND SURFACE NAME ARE THE SAME
+        if(regionName != surfaceName)
+            throw "region names and surface names are not the same";
+    }
 }
 
 void StarJob::printTwoColumns(std::string _c1, std::string _c2) const {
@@ -1138,6 +1172,8 @@ void StarJob::printJobData(){
     printTwoColumns(" SETUP", " ", '-');
     printTwoColumns("Client:", getClientJobDirectory());
     printTwoColumns("Server:", getServerJobDirectory());
+    if(initializationJob != Default::initializationJob)
+        printTwoColumns("Initialization:", initializationJob);
     printTwoColumns("Clean server:", cleanServer? "yes" : "no");
     printTwoColumns("Download sim file:", saveSimFile? "yes" : "no");
     printTwoColumns(" Auto save:", autoSaveSimulation? "yes" : "no");
@@ -1153,19 +1189,21 @@ void StarJob::printJobData(){
     printTwoColumns("Mach =", std::to_string(machNumber));
     printTwoColumns("T (static) =", std::to_string(staticTemperature) + " K");
     printTwoColumns("V (ref) =", std::to_string(referenceVelocity) + " m/s");
-    printTwoColumns("p (ref) =", std::to_string(referencePressure) + " Pa");
-    printTwoColumns("rho (ref) =", std::to_string(referenceDensity) + " kg/m3");
+    printTwoColumns("p (ref) =", javaScientific(referencePressure) + " Pa");
+    printTwoColumns("rho (ref) =", javaScientific(referenceDensity) + " kg/m3");
     if(dynamicViscosity > 0)
-        printTwoColumns("mu (air) =", std::to_string(dynamicViscosity) + " Pa.s");
+        printTwoColumns("mu (air) =", javaScientific(dynamicViscosity) + " Pa.s");
     std::cout << std::endl;
 
     // Region data
-    printTwoColumns(" REGIONS", " ", '-');
-    printThreeColumns("Region", "Boundary", "Surface Size");
-    for(int i = 0; i < regionName.size(); i++){
-        printThreeColumns(regionName[i], boundaryCondition[i], std::to_string(surfaceSize[i]) + " m");
+    if(!surfaceSize.empty()){
+        printTwoColumns(" REGIONS", " ", '-');
+        printThreeColumns("Region", "Boundary", "Surface Size");
+        for(int i = 0; i < regionName.size(); i++){
+            printThreeColumns(regionName[i], boundaryCondition[i], std::to_string(surfaceSize[i]) + " m");
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
 
     // Prism layer data
     if(prismLayers > 0){
@@ -1203,6 +1241,12 @@ void StarJob::printJobData(){
             printThreeColumns(std::to_string(cylinderX2[i]), std::to_string(cylinderY2[i]), std::to_string(cylinderZ2[i]));
             std::cout << std::endl;
         }
+    }
+
+    // Notes
+    if(initializationJob != Default::initializationJob && !newMesh){
+        colorText("Note: will not remesh model", YELLOW);
+        std::cout << std::endl;
     }
 
     // If batch mode, just wait Default::pauseTime, otherwise expect user input

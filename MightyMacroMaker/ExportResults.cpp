@@ -38,7 +38,7 @@ std::vector<std::string> ExportResults::exportResultsCode() {
                 "        forceFrictionFieldFunction.getTypeOption().setSelected(FieldFunctionTypeOption.Type.VECTOR);",
                 "        forceFrictionFieldFunction.setFunctionName(\"ForceFriction\");",
                 "        forceFrictionFieldFunction.setDefinition(\"$${WallShearStress}*$$Area.mag()\");",
-                "        forcePressureFieldFunction.setPresentationName(\"Force (Friction)\");"
+                "        forceFrictionFieldFunction.setPresentationName(\"Force (Friction)\");"
         };
         code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
     }

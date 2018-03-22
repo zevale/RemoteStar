@@ -10,13 +10,15 @@ namespace Math {
 
 namespace Default{
     // ---------- GENERIC
-    const char* const filePath      ("empty_path");
-    constexpr     int scalar        (32);
-    constexpr    bool boolean       (false);
+    const char* const filePath          ("empty_path");
+    const char* const initializationJob ("empty_job");
+    constexpr    bool newMesh           (true);
+    constexpr    bool newPhysics        (true);
+    constexpr     int scalar            (32);
+    constexpr    bool boolean           (false);
 
     // ---------- PAUSE
     constexpr int pauseTime = 3000; // Milliseconds
-
 
     // ---------- AUTO SAVE
     constexpr int  numAutosaveFiles   (0);

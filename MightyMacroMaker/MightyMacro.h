@@ -35,8 +35,10 @@
 
 class MightyMacro {
 private:
-    std::string      macroFilePath;    // File path to the macro
-    std::ofstream    macroFile;        // To write
+    std::string      macroFilePath;     // File path to the macro
+    std::ofstream    macroFile;         // To write
+    bool             hasInitialization; // An initialization file has been provided
+    bool             newMesh;           // Check the need to mesh
 
     StarJob            *currentStarJob;
     Import             import;
@@ -88,6 +90,7 @@ private:
     void          writeRunSimulation();
     void          writeExportResults();
     void          writeCloseSim();
+    void          writeSimCleanup();
 
 };
 #endif //MIGHTYMACRO_H

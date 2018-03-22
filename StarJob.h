@@ -27,6 +27,8 @@ private:
     bool                     batchModeOption;
     std::string              jobFilePath;
     std::string              jobName;
+    std::string              initializationJob;
+    bool                     newMesh;
     std::string              clientDirectory;
     std::string              serverDirectory;
     bool                     saveSimFile;
@@ -96,6 +98,8 @@ public:
 
     // Getters
     std::string              getJobName()                                       const;
+    std::string              getInitializationJob()                             const;
+    bool                     getNewMesh()                                       const;
     std::string              getClientDirectory()                               const;
     std::string              getClientJobDirectory()                            const;
     std::string              getClientJobDirectory(const std::string& _subPath) const;
