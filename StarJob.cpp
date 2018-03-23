@@ -359,7 +359,6 @@ void StarJob::loadStarJob() {
     bool jobSetup              = false;
     bool meshModel             = false;
     bool volumetricControls    = false;
-    bool hasVolumetricControls = false;
     bool physicsModel          = false;
     bool solverOptions         = false;
     bool stoppingCriteria      = false;
@@ -863,7 +862,7 @@ void StarJob::loadStarJob() {
                               << std::right << std::setw(mediumColumn) << ".";
                     colorText("Loaded\n", GREEN);
                     // Volumetric controls complete
-                    hasVolumetricControls = true;
+                    volumetricControls = true;
                     hasBeginVolumetricControls = false;
                 }
 
@@ -1133,13 +1132,15 @@ void StarJob::loadStarJob() {
         throw "regions section is missing";
     if(!meshModel && !hasInitialization)
         throw "mesh model is missing";
+    if(volumetricControls && !meshModel)
+        throw "mesh model is missing";
     if(!physicsModel)
         throw "physics model is missing";
     if(!stoppingCriteria)
         throw "stopping criteria is missing";
 
     // Check newMesh
-    if(hasInitialization && !meshModel && !hasVolumetricControls)
+    if(hasInitialization && !meshModel && !volumetricControls)
         newMesh = false;
 
     if(newMesh && meshModel){
