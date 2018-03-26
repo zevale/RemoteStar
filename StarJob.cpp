@@ -322,19 +322,25 @@ void StarJob::loadStarJob() {
 
     // Volumentric control options
     bool hasBeginVolumetricControls = false;
-    bool hasBlock                   = false;
+//    bool hasBlock                   = false;
     bool hasBlockCorner1            = false;
     bool hasBlockCorner2            = false;
     bool hasBlockSurfaceSize        = false;
-    bool hasCylinder                = false;
+//    bool hasCylinder                = false;
     bool hasCylinderBase1           = false;
     bool hasCylinderBase2           = false;
     bool hasCylinderRadius          = false;
     bool hasCylinderSurfaceSize     = false;
+//    bool hasCone                    = false;
+    bool hasConeBase1               = false;
+    bool hasConeBase2               = false;
+    bool hasConeRadius1             = false;
+    bool hasConeRadius2             = false;
+    bool hasConeSurfaceSize         = false;
 
-    // Physics model options
+    // Physics model mandatory options
     bool hasBeginPhysicsModel = false;
-    bool hasDynamicViscosity  = false;
+//    bool hasDynamicViscosity  = false;
     bool hasStaticTemperature = false;
     bool hasReferencePressure = false;
     bool hasReferenceVelocity = false;
@@ -714,159 +720,328 @@ void StarJob::loadStarJob() {
                 if(hasBeginStarJob && (word == "#BEGIN_VOLUMETRIC_CONTROLS"))
                     hasBeginVolumetricControls = true;
 
-                // Check block tag
-                if(hasBeginVolumetricControls && (word == "block")){
-                    hasBlock = true;
-                    // Set block data members to false until data arrives
-                    hasBlockCorner1 = false;
-                    hasBlockCorner2 = false;
-                    hasBlockSurfaceSize = false;
-                }
+                while(hasBeginVolumetricControls && std::getline(starJobFile, line)){
+                    // Get first word from line into issLine and word
+                    issLine.str("");            // Empty issLine
+                    issLine.clear();            // Clear stream's error state
+                    issLine.str(line);          // Update stream
+                    issLine >> word;            // Input first word
 
-                // Check block corner_1
-                if(hasBeginVolumetricControls && (word == "corner_1")){
-                    int coordinates = 0;
-                    while((issLine >> word) && coordinates < 3){
-                        if(coordinates == 0)
-                            blockX1.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 1)
-                            blockY1.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 2){
-                            blockZ1.emplace_back((std::stod(word, nullptr)));
-                            hasBlockCorner1 = true;
+                    // BLOCK
+
+                    // Check block tag
+                    if(word == "block"){
+//                        hasBlock = true;
+                        // Set block data members to false until data arrives
+                        hasBlockCorner1 = false;
+                        hasBlockCorner2 = false;
+                        hasBlockSurfaceSize = false;
+
+                        // Get block data
+                        while(std::getline(starJobFile, line)){
+                            // Get words from line into issLine
+                            issLine.str("");            // Empty issLine
+                            issLine.clear();            // Clear stream's error state
+                            issLine.str(line);          // Update stream
+                            while(issLine >> word){
+
+                                // Check block corner_1
+                                if(word == "corner_1"){
+                                    int coordinates = 0;
+                                    while((issLine >> word) && coordinates < 3){
+                                        if(coordinates == 0)
+                                            blockX1.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 1)
+                                            blockY1.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 2){
+                                            blockZ1.emplace_back((std::stod(word, nullptr)));
+                                            hasBlockCorner1 = true;
+                                        }
+                                        coordinates++;
+                                    }
+                                    // Check all coordinates
+                                    if(coordinates != 3)
+                                        throw " block <corner_1> is missing data";
+                                }
+
+                                // Check block corner_2
+                                if(word == "corner_2"){
+                                    int coordinates = 0;
+                                    while((issLine >> word) && coordinates < 3){
+                                        if(coordinates == 0)
+                                            blockX2.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 1)
+                                            blockY2.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 2){
+                                            blockZ2.emplace_back((std::stod(word, nullptr)));
+                                            hasBlockCorner2 = true;
+                                        }
+                                        coordinates++;
+                                    }
+                                    // Check all coordinates
+                                    if(coordinates != 3)
+                                        throw "<corner_2> is missing data";
+                                }
+
+                                // Check surface_size
+                                if(word == "surface_size"){
+                                    if(issLine >> word){
+                                        blockSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                        hasBlockSurfaceSize = true;
+                                    } else
+                                        throw "block <surface_size> is empty";
+                                }
+
+                                // Check for new part tags arriving too early
+                                if(word == "block" || word == "cone" || word == "cylinder")
+                                    break;
+                            }
+                            // Check if all block data members have been entered
+                            if(hasBlockCorner1 && hasBlockCorner2 & hasBlockSurfaceSize){
+                                // Stop getting block lines
+                                break;
+                            }
                         }
-                        coordinates++;
+                        // Missing data
+                        if(!hasBlockCorner1)
+                            throw "block <corner_1> is missing";
+                        if(!hasBlockCorner2)
+                            throw "block <corner_2> is missing";
+                        if(!hasBlockSurfaceSize)
+                            throw "block <surface_size> is missing";
+//                        // Get words from line into issLine and word
+//                        issLine.str("");            // Empty issLine
+//                        issLine.clear();            // Clear stream's error state
+//                        issLine.str(line);          // Update stream
+//                        issLine >> word;            // Input first word
                     }
-                    // Check all coordinates
-                    if(coordinates != 3)
-                        throw "<corner_1> is missing data";
-                }
 
-                // Check block corner_2
-                if(hasBeginVolumetricControls && (word == "corner_2")){
-                    int coordinates = 0;
-                    while((issLine >> word) && coordinates < 3){
-                        if(coordinates == 0)
-                            blockX2.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 1)
-                            blockY2.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 2){
-                            blockZ2.emplace_back((std::stod(word, nullptr)));
-                            hasBlockCorner2 = true;
+                    // CYLINDER
+
+                    // Check cylinder tag
+                    if(word == "cylinder"){
+//                        hasCylinder = true;
+                        // Set cylinder data members to false until data arrives
+                        hasCylinderBase1       = false;
+                        hasCylinderBase2       = false;
+                        hasCylinderRadius      = false;
+                        hasCylinderSurfaceSize = false;
+
+                        // Get cylinder data
+                        while(std::getline(starJobFile, line)) {
+                            // Get words from line into issLine
+                            issLine.str("");            // Empty issLine
+                            issLine.clear();            // Clear stream's error state
+                            issLine.str(line);          // Update stream
+                            while (issLine >> word) {
+                                // Check cylinder base_1
+                                if(word == "base_1"){
+                                    int coordinates = 0;
+                                    while((issLine >> word) && coordinates < 3){
+                                        if(coordinates == 0)
+                                            cylinderX1.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 1)
+                                            cylinderY1.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 2){
+                                            cylinderZ1.emplace_back((std::stod(word, nullptr)));
+                                            hasCylinderBase1 = true;
+                                        }
+                                        coordinates++;
+                                    }
+                                    // Check all coordinates
+                                    if(coordinates != 3)
+                                        throw "cylinder <base_1> is missing data";
+                                }
+
+                                // Check cylinder base_2
+                                if(word == "base_2"){
+                                    int coordinates = 0;
+                                    while((issLine >> word) && coordinates < 3){
+                                        if(coordinates == 0)
+                                            cylinderX2.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 1)
+                                            cylinderY2.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 2){
+                                            cylinderZ2.emplace_back((std::stod(word, nullptr)));
+                                            hasCylinderBase2 = true;
+                                        }
+                                        coordinates++;
+                                    }
+                                    // Check all coordinates
+                                    if(coordinates != 3)
+                                        throw "cylinder <base_2> is missing data";
+                                }
+
+                                // Check radius tag
+                                if(word == "radius"){
+                                    if(issLine >> word){
+                                        cylinderRadius.emplace_back(std::stod(word, nullptr));
+                                        hasCylinderRadius = true;
+                                    } else
+                                        throw "cylinder <radius> is empty";
+                                }
+
+                                // Check surface_size
+                                if(word == "surface_size"){
+                                    if(issLine >> word){
+                                        cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                        hasCylinderSurfaceSize = true;
+                                    } else
+                                        throw "cylinder <surface_size> is empty";
+                                }
+
+                                // Check for new part tags arriving too early
+                                if(word == "block" || word == "cone" || word == "cylinder")
+                                    break;
+                            }
+                            // Check if all cylinder data members have been entered
+                            if(hasCylinderBase1 && hasCylinderBase2 && hasCylinderRadius && hasCylinderSurfaceSize){
+                                // Stop getting cylinder data
+                                break;
+                            }
                         }
-                        coordinates++;
+                        // Missing data
+                        if(!hasCylinderBase1)
+                            throw "cylinder <base_1> is missing";
+                        if(!hasCylinderBase2)
+                            throw "cylinder <base_2> is missing";
+                        if(!hasCylinderRadius)
+                            throw "cylinder <radius> is missing";
+                        if(!hasCylinderSurfaceSize)
+                            throw "cylinder <surface_size> is missing";
+//                        // Get words from line into issLine and word
+//                        issLine.str("");            // Empty issLine
+//                        issLine.clear();            // Clear stream's error state
+//                        issLine.str(line);          // Update stream
+//                        issLine >> word;            // Input first word
                     }
-                    // Check all coordinates
-                    if(coordinates != 3)
-                        throw "<corner_2> is missing data";
-                }
 
-                // Check block_surface_size
-                if(hasBeginVolumetricControls && (word == "block_surface_size")){
-                    if(issLine >> word){
-                        blockSurfaceSize.emplace_back(std::stod(word, nullptr));
-                        hasBlockSurfaceSize = true;
-                    } else
-                        throw "block <surface_size> is empty";
-                }
+                    // CONE
 
-                // Check cylinder tag
-                if(hasBeginVolumetricControls && (word == "cylinder")){
-                    hasCylinder = true;
-                    // Set cylinder data members to false until data arrives
-                    hasCylinderBase1       = false;
-                    hasCylinderBase2       = false;
-                    hasCylinderRadius      = false;
-                    hasCylinderSurfaceSize = false;
-                }
+                    // Check cone tag
+                    if(word == "cone"){
+//                        hasCone = true;
+                        // Set cone data members to false until data arrives
+                        hasConeBase1       = false;
+                        hasConeBase2       = false;
+                        hasConeRadius1     = false;
+                        hasConeRadius2     = false;
+                        hasConeSurfaceSize = false;
 
-                // Check cylinder base_1
-                if(hasBeginVolumetricControls && (word == "base_1")){
-                    int coordinates = 0;
-                    while((issLine >> word) && coordinates < 3){
-                        if(coordinates == 0)
-                            cylinderX1.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 1)
-                            cylinderY1.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 2){
-                            cylinderZ1.emplace_back((std::stod(word, nullptr)));
-                            hasCylinderBase1 = true;
+                        // Get cone data
+                        while(std::getline(starJobFile, line)) {
+                            // Get words from line into issLine
+                            issLine.str("");            // Empty issLine
+                            issLine.clear();            // Clear stream's error state
+                            issLine.str(line);          // Update stream
+                            while (issLine >> word) {
+                                // Check cone base_1
+                                if(word == "base_1"){
+                                    int coordinates = 0;
+                                    while((issLine >> word) && coordinates < 3){
+                                        if(coordinates == 0)
+                                            coneX1.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 1)
+                                            coneY1.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 2){
+                                            coneZ1.emplace_back((std::stod(word, nullptr)));
+                                            hasConeBase1 = true;
+                                        }
+                                        coordinates++;
+                                    }
+                                    // Check all coordinates
+                                    if(coordinates != 3)
+                                        throw "cone <base_1> is missing data";
+                                }
+
+                                // Check cone base_2
+                                if(word == "base_2"){
+                                    int coordinates = 0;
+                                    while((issLine >> word) && coordinates < 3){
+                                        if(coordinates == 0)
+                                            coneX2.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 1)
+                                            coneY2.emplace_back(std::stod(word, nullptr));
+                                        else if(coordinates == 2){
+                                            coneZ2.emplace_back((std::stod(word, nullptr)));
+                                            hasConeBase2 = true;
+                                        }
+                                        coordinates++;
+                                    }
+                                    // Check all coordinates
+                                    if(coordinates != 3)
+                                        throw "cone <base_2> is missing data";
+                                }
+
+                                // Check radius_1 tag
+                                if(word == "radius_1"){
+                                    if(issLine >> word){
+                                        coneRadius1.emplace_back(std::stod(word, nullptr));
+                                        hasConeRadius1 = true;
+                                    } else
+                                        throw "cone <radius_1> is empty";
+                                }
+
+                                // Check radius_2 tag
+                                if(word == "radius_2"){
+                                    if(issLine >> word){
+                                        coneRadius2.emplace_back(std::stod(word, nullptr));
+                                        hasConeRadius2 = true;
+                                    } else
+                                        throw "cone <radius_2> is empty";
+                                }
+
+                                // Check surface_size
+                                if(word == "surface_size"){
+                                    if(issLine >> word){
+                                        coneSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                        hasConeSurfaceSize = true;
+                                    } else
+                                        throw "cone <surface_size> is empty";
+                                }
+
+                                // Check for new part tags arriving too early
+                                if(word == "block" || word == "cylinder" || word == "cone" )
+                                    break;
+                            }
+                            // Check if all cone data members have been entered
+                            if(hasConeBase1 && hasConeBase2 &&
+                               hasConeRadius1 && hasConeRadius2 && hasConeSurfaceSize){
+                                // Stop getting cylinder data
+                                break;
+                            }
                         }
-                        coordinates++;
+                        // Missing data
+                        if(!hasConeBase1)
+                            throw "cone <base_1> is missing";
+                        if(!hasConeBase2)
+                            throw "cone <base_2> is missing";
+                        if(!hasConeRadius1)
+                            throw "cone <radius_1> is missing";
+                        if(!hasConeRadius2)
+                            throw "cone <radius_2> is missing";
+                        if(!hasConeSurfaceSize)
+                            throw "cone <surface_size> is missing";
+//                        // Get words from line into issLine and word
+//                        issLine.str("");            // Empty issLine
+//                        issLine.clear();            // Clear stream's error state
+//                        issLine.str(line);          // Update stream
+//                        issLine >> word;            // Input first word
                     }
-                    // Check all coordinates
-                    if(coordinates != 3)
-                        throw "<base_1> is missing data";
-                }
 
-                // Check cylinder base_2
-                if(hasBeginVolumetricControls && (word == "base_2")){
-                    int coordinates = 0;
-                    while((issLine >> word) && coordinates < 3){
-                        if(coordinates == 0)
-                            cylinderX2.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 1)
-                            cylinderY2.emplace_back(std::stod(word, nullptr));
-                        else if(coordinates == 2){
-                            cylinderZ2.emplace_back((std::stod(word, nullptr)));
-                            hasCylinderBase2 = true;
-                        }
-                        coordinates++;
+                    // Check ##END_VOLUMETRIC_CONTROLS tag
+                    if(hasBeginVolumetricControls && (word == "#END_VOLUMETRIC_CONTROLS")){
+                        std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Volumetric controls"
+                                  << std::right << std::setw(mediumColumn) << ".";
+                        colorText("Loaded\n", GREEN);
+                        // Volumetric controls complete
+                        volumetricControls = true;
+                        hasBeginVolumetricControls = false;
+                        // Stop getting lines
+                        break;
                     }
-                    // Check all coordinates
-                    if(coordinates != 3)
-                        throw "<base_2> is missing data";
                 }
-
-                // Check radius tag
-                if(hasBeginVolumetricControls && (word == "radius")){
-                    if(issLine >> word){
-                        cylinderRadius.emplace_back(std::stod(word, nullptr));
-                        hasCylinderRadius = true;
-                    } else
-                        throw "<radius> is empty";
-                }
-
-                // Check surface_size
-                if(hasBeginVolumetricControls && (word == "cylinder_surface_size")){
-                    if(issLine >> word){
-                        cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
-                        hasCylinderSurfaceSize = true;
-                    } else
-                        throw "cylinder <surface_size> is empty";
-                }
-
-                // Check ##END_VOLUMETRIC_CONTROLS tag
-                if(hasBeginVolumetricControls && (word == "#END_VOLUMETRIC_CONTROLS")){
-                    // Check missing data
-                    if(!hasBlock && (hasBlockCorner1 || hasBlockCorner2 || hasBlockSurfaceSize))
-                        throw "no <block> tag";
-                    if(!hasBlockCorner1 && (hasBlock || hasBlockCorner2 || hasBlockSurfaceSize))
-                        throw "<corner_1> is missing";
-                    if(!hasBlockCorner2 && (hasBlock || hasBlockCorner1 || hasBlockSurfaceSize))
-                        throw "<corner_2> is missing";
-                    if(!hasBlockSurfaceSize && (hasBlock || hasBlockCorner1 || hasBlockCorner2))
-                        throw "block <surface_size> is missing";
-                    if(!hasCylinder && (hasCylinderBase1 || hasCylinderBase2 || hasCylinderRadius || hasCylinderSurfaceSize))
-                        throw "no <cylinder> tag";
-                    if(!hasCylinderBase1 && (hasCylinder || hasCylinderBase2 || hasCylinderRadius || hasCylinderSurfaceSize))
-                        throw "<base_1> is missing";
-                    if(!hasCylinderBase2 && (hasCylinder || hasCylinderBase1 || hasCylinderRadius || hasCylinderSurfaceSize))
-                        throw "<base_2> is missing";
-                    if(!hasCylinderRadius && (hasCylinder || hasCylinderBase1 || hasCylinderBase2 || hasCylinderSurfaceSize))
-                        throw "<radius> is missing";
-                    if(!hasCylinderSurfaceSize && (hasCylinder || hasCylinderBase1 || hasCylinderBase2 || hasCylinderRadius))
-                        throw "cylinder <surface_size> is missing";
-
-                    std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Volumetric controls"
-                              << std::right << std::setw(mediumColumn) << ".";
-                    colorText("Loaded\n", GREEN);
-                    // Volumetric controls complete
-                    volumetricControls = true;
-                    hasBeginVolumetricControls = false;
-                }
-
-            }
+            } // END VOLUMETRIC CONTROLS
 
             // PHYSICS MODEL
             busyElsewhere = (hasBeginJobSetup           ||
@@ -885,7 +1060,7 @@ void StarJob::loadStarJob() {
                 if(hasBeginPhysicsModel && (word == "dynamic_viscosity")){
                     if(issLine >> word){
                         dynamicViscosity = std::stod(word, nullptr);
-                        hasDynamicViscosity = true;
+//                        hasDynamicViscosity = true;
                     } else
                         throw "<dynamic_viscosity> is empty";
                 }
@@ -1219,11 +1394,13 @@ void StarJob::printJobData(){
     if(!blockSurfaceSize.empty() || !cylinderSurfaceSize.empty())
         printTwoColumns("VOLUMETRIC CONTROLS", " ", '-');
 
+    // Block parts
     if(!blockSurfaceSize.empty()){
+        colorText("Block part(s)\n", AQUA);
         for(int i = 0; i < blockSurfaceSize.size(); i++){
             printTwoColumns("Block " + std::to_string(i + 1) + ":", "surface size = " +
                     std::to_string(blockSurfaceSize[i]) + " m");
-            colorText("Corners\n", AQUA);
+            std::cout << "Corners" << std::endl;
             printThreeColumns("X [m]", "Y [m]", "Z [m]");
             printThreeColumns(std::to_string(blockX1[i]), std::to_string(blockY1[i]), std::to_string(blockZ1[i]));
             printThreeColumns(std::to_string(blockX2[i]), std::to_string(blockY2[i]), std::to_string(blockZ2[i]));
@@ -1231,15 +1408,33 @@ void StarJob::printJobData(){
         }
     }
 
+    // Cylinder parts
     if(!cylinderSurfaceSize.empty()){
+        colorText("Cylinder part(s)\n", AQUA);
         for(int i = 0; i < cylinderSurfaceSize.size(); i++){
             printTwoColumns("Cylinder " + std::to_string(i + 1) + ":", "surface size = " +
                                                                     std::to_string(cylinderSurfaceSize[i]) + " m");
             printTwoColumns("", "      radius = " + std::to_string(cylinderRadius[i]) + " m");
-            colorText("Axis\n", AQUA);
+            std::cout << "Axis" << std::endl;
             printThreeColumns("X [m]", "Y [m]", "Z [m]");
             printThreeColumns(std::to_string(cylinderX1[i]), std::to_string(cylinderY1[i]), std::to_string(cylinderZ1[i]));
             printThreeColumns(std::to_string(cylinderX2[i]), std::to_string(cylinderY2[i]), std::to_string(cylinderZ2[i]));
+            std::cout << std::endl;
+        }
+    }
+
+    // Cone parts
+    if(!coneSurfaceSize.empty()){
+        colorText("Cone part(s)\n", AQUA);
+        for(int i = 0; i < coneSurfaceSize.size(); i++){
+            printTwoColumns("Cone " + std::to_string(i + 1) + ":", "surface size = " +
+                                                                       std::to_string(coneSurfaceSize[i]) + " m");
+            printTwoColumns("", "    radius 1 = " + std::to_string(coneRadius1[i]) + " m");
+            printTwoColumns("", "    radius 2 = " + std::to_string(coneRadius2[i]) + " m");
+            std::cout << "Axis" << std::endl;
+            printThreeColumns("X [m]", "Y [m]", "Z [m]");
+            printThreeColumns(std::to_string(coneX1[i]), std::to_string(coneY1[i]), std::to_string(coneZ1[i]));
+            printThreeColumns(std::to_string(coneX2[i]), std::to_string(coneY2[i]), std::to_string(coneZ2[i]));
             std::cout << std::endl;
         }
     }

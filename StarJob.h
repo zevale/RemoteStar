@@ -65,6 +65,15 @@ private:
     std::vector<double> cylinderZ2;
     std::vector<double> cylinderRadius;
     std::vector<double> cylinderSurfaceSize;
+    std::vector<double> coneX1;
+    std::vector<double> coneY1;
+    std::vector<double> coneZ1;
+    std::vector<double> coneX2;
+    std::vector<double> coneY2;
+    std::vector<double> coneZ2;
+    std::vector<double> coneRadius1;
+    std::vector<double> coneRadius2;
+    std::vector<double> coneSurfaceSize;
 
     // Physics model
     double                   machNumber;
