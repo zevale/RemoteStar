@@ -14,13 +14,17 @@ class VolumetricControls {
 private:
     Block    block;
     Cylinder cylinder;
+    Cone     cone;
 public:
     // Constructor
-    explicit VolumetricControls(const Block& _block = {}, const Cylinder& _cylinder = {});
+    explicit VolumetricControls(const Block& _block = {}, const Cylinder& _cylinder = {}, const Cone& _cone = {});
 
     // Getters
     Block    getBlock()    const;
     Cylinder getCylinder() const;
+    Cone     getCone()     const;
+
+    // Member function
     std::vector<std::string> volumetricControlsCode();
 };
 

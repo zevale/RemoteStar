@@ -8,6 +8,7 @@ std::vector<std::string> MightyScene::mightySceneCode() {
     std::vector<std::string> codeBuffer;
 
     code = {
+            "",
             "    private void createScenes(){",
             "        Simulation activeSimulation = getActiveSimulation();",
             "",

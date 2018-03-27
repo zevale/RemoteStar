@@ -172,6 +172,42 @@ std::vector<double> StarJob::getCylinderSurfaceSize() const {
     return cylinderSurfaceSize;
 }
 
+std::vector<double> StarJob::getConeX1() const {
+    return coneX1;
+}
+
+std::vector<double> StarJob::getConeY1() const {
+    return coneY1;
+}
+
+std::vector<double> StarJob::getConeZ1() const {
+    return coneZ1;
+}
+
+std::vector<double> StarJob::getConeX2() const {
+    return coneX2;
+}
+
+std::vector<double> StarJob::getConeY2() const {
+    return coneY2;
+}
+
+std::vector<double> StarJob::getConeZ2() const {
+    return coneZ2;
+}
+
+std::vector<double> StarJob::getConeRadius1() const {
+    return coneRadius1;
+}
+
+std::vector<double> StarJob::getConeRadius2() const {
+    return coneRadius2;
+}
+
+std::vector<double> StarJob::getConeSurfaceSize() const {
+    return coneSurfaceSize;
+}
+
 double StarJob::getMachNumber() const {
     return machNumber;
 }

@@ -143,6 +143,15 @@ public:
     std::vector<double>      getCylinderZ2()                                    const;
     std::vector<double>      getCylinderRadius()                                const;
     std::vector<double>      getCylinderSurfaceSize()                           const;
+    std::vector<double>      getConeX1()                                        const;
+    std::vector<double>      getConeY1()                                        const;
+    std::vector<double>      getConeZ1()                                        const;
+    std::vector<double>      getConeX2()                                        const;
+    std::vector<double>      getConeY2()                                        const;
+    std::vector<double>      getConeZ2()                                        const;
+    std::vector<double>      getConeRadius1()                                   const;
+    std::vector<double>      getConeRadius2()                                   const;
+    std::vector<double>      getConeSurfaceSize()                               const;
     double                   getMachNumber()                                    const;
     double                   getDynamicViscosity()                              const;
     double                   getStaticTemperature()                             const;

@@ -1,8 +1,9 @@
 #include "VolumetricControls.h"
 
-VolumetricControls::VolumetricControls(const Block &_block, const Cylinder& _cylinder) :
+VolumetricControls::VolumetricControls(const Block &_block, const Cylinder& _cylinder, const Cone& _cone) :
         block(_block),
-        cylinder(_cylinder) {}
+        cylinder(_cylinder),
+        cone(_cone) {}
 
 /*
  * Getters
@@ -15,12 +16,16 @@ Cylinder VolumetricControls::getCylinder() const {
     return cylinder;
 }
 
+Cone VolumetricControls::getCone() const {
+    return cone;
+}
+
 std::vector<std::string> VolumetricControls::volumetricControlsCode() {
     std::vector<std::string> code;
     std::vector<std::string> codeBuffer;
 
-    // Check volumetric controls
     code = {
+            "",
             "    private void volumetricControls(){",
             "        Simulation activeSimulation = getActiveSimulation();",
             "",
@@ -41,22 +46,22 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
     if(!block.surfaceSize.empty()){
         for(int i = 0; i < block.surfaceSize.size(); i++){
             // Variable names
-            std::string valueCornerX1("valueCornerX1_B" + std::to_string(i+1));
-            std::string valueCornerY1("valueCornerY1_B" + std::to_string(i+1));
-            std::string valueCornerZ1("valueCornerZ1_B" + std::to_string(i+1));
-            std::string valueCornerX2("valueCornerX2_B" + std::to_string(i+1));
-            std::string valueCornerY2("valueCornerY2_B" + std::to_string(i+1));
-            std::string valueCornerZ2("valueCornerZ2_B" + std::to_string(i+1));
-            std::string valueSurfaceSize("valueSurfaceSize_B" + std::to_string(i+1));
-            std::string simpleBlockPartObj("simpleBlockPartObj_B" + std::to_string(i+1));
-            std::string coordinateCorner1("coordinateCorner1_B" + std::to_string(i+1));
-            std::string coordinateCorner2("coordinateCorner2_B" + std::to_string(i+1));
-            std::string volumeSourceObj("volumeSourceObj_B" + std::to_string(i+1));
-            std::string volumeSourceDualMesherSizeOptionObj("volumeSourceDualMesherSizeOptionObj_B" + std::to_string(i+1));
-            std::string volumeSourceSizeObj("volumeSourceSizeObj_B" + std::to_string(i+1));
-            std::string absoluteSizeObj("absoluteSizeObj_B" + std::to_string(i+1));
-            std::string volumeSourceResurfacerSizeOptionObj("volumeSourceResurfacerSizeOptionObj_B" + std::to_string(i+1));
-            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionCylinderObj_B" + std::to_string(i+1));
+            std::string valueCornerX1("valueCornerX1_Block" + std::to_string(i+1));
+            std::string valueCornerY1("valueCornerY1_Block" + std::to_string(i+1));
+            std::string valueCornerZ1("valueCornerZ1_Block" + std::to_string(i+1));
+            std::string valueCornerX2("valueCornerX2_Block" + std::to_string(i+1));
+            std::string valueCornerY2("valueCornerY2_Block" + std::to_string(i+1));
+            std::string valueCornerZ2("valueCornerZ2_Block" + std::to_string(i+1));
+            std::string valueSurfaceSize("valueSurfaceSize_Block" + std::to_string(i+1));
+            std::string simpleBlockPartObj("simpleBlockPartObj_Block" + std::to_string(i+1));
+            std::string coordinateCorner1("coordinateCorner1_Block" + std::to_string(i+1));
+            std::string coordinateCorner2("coordinateCorner2_Block" + std::to_string(i+1));
+            std::string volumeSourceObj("volumeSourceObj_Block" + std::to_string(i+1));
+            std::string volumeSourceDualMesherSizeOptionObj("volumeSourceDualMesherSizeOptionObj_Block" + std::to_string(i+1));
+            std::string volumeSourceSizeObj("volumeSourceSizeObj_Block" + std::to_string(i+1));
+            std::string absoluteSizeObj("absoluteSizeObj_Block" + std::to_string(i+1));
+            std::string volumeSourceResurfacerSizeOptionObj("volumeSourceResurfacerSizeOptionObj_Block" + std::to_string(i+1));
+            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionObj_Block" + std::to_string(i+1));
             codeBuffer = {
                     "",
                     "        /*",
@@ -115,23 +120,23 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
     if(!cylinder.surfaceSize.empty()){
         for(int i = 0; i < cylinder.surfaceSize.size(); i++){
             // Variable names
-            std::string valueBaseX1("valueBaseX1_C" + std::to_string(i+1));
-            std::string valueBaseY1("valueBaseY1_C" + std::to_string(i+1));
-            std::string valueBaseZ1("valueBaseZ1_C" + std::to_string(i+1));
-            std::string valueBaseX2("valueBaseX2_C" + std::to_string(i+1));
-            std::string valueBaseY2("valueBaseY2_C" + std::to_string(i+1));
-            std::string valueBaseZ2("valueBaseZ2_C" + std::to_string(i+1));
-            std::string valueRadius("valueRadius_C" + std::to_string(i+1));
-            std::string valueSurfaceSize("valueSurfaceSize_C" + std::to_string(i+1));
-            std::string simpleCylinderPartObj("simpleCylinderPartObj_C" + std::to_string(i+1));
-            std::string coordinateBase1("coordinateBase1_C" + std::to_string(i+1));
-            std::string coordinateBase2("coordinateBase2_C" + std::to_string(i+1));
-            std::string volumeSourceCylinderObj("volumeSourceCylinderObj_C" + std::to_string(i+1));
-            std::string volumeSourceDualMesherSizeOptionCylinderObj("volumeSourceDualMesherSizeOptionCylinderObj_C" + std::to_string(i+1));
-            std::string volumeSourceSizeCylinderObj("volumeSourceSizeCylinderObj_C" + std::to_string(i+1));
-            std::string absoluteSizeCylinderObj("absoluteSizeCylinderObj_C" + std::to_string(i+1));
-            std::string volumeSourceResurfacerSizeOptionCylinderObj("volumeSourceResurfacerSizeOptionCylinderObj_C" + std::to_string(i+1));
-            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionObj_C" + std::to_string(i+1));
+            std::string valueBaseX1("valueBaseX1_Cylinder" + std::to_string(i+1));
+            std::string valueBaseY1("valueBaseY1_Cylinder" + std::to_string(i+1));
+            std::string valueBaseZ1("valueBaseZ1_Cylinder" + std::to_string(i+1));
+            std::string valueBaseX2("valueBaseX2_Cylinder" + std::to_string(i+1));
+            std::string valueBaseY2("valueBaseY2_Cylinder" + std::to_string(i+1));
+            std::string valueBaseZ2("valueBaseZ2_Cylinder" + std::to_string(i+1));
+            std::string valueRadius("valueRadius_Cylinder" + std::to_string(i+1));
+            std::string valueSurfaceSize("valueSurfaceSize_Cylinder" + std::to_string(i+1));
+            std::string simpleCylinderPartObj("simpleCylinderPartObj_Cylinder" + std::to_string(i+1));
+            std::string coordinateBase1("coordinateBase1_Cylinder" + std::to_string(i+1));
+            std::string coordinateBase2("coordinateBase2_Cylinder" + std::to_string(i+1));
+            std::string volumeSourceObj("volumeSourceObj_Cylinder" + std::to_string(i+1));
+            std::string volumeSourceDualMesherSizeOptionObj("volumeSourceDualMesherSizeOptionObj_Cylinder" + std::to_string(i+1));
+            std::string volumeSourceSizeObj("volumeSourceSizeObj_Cylinder" + std::to_string(i+1));
+            std::string absoluteSizeObj("absoluteSizeObj_Cylinder" + std::to_string(i+1));
+            std::string volumeSourceResurfacerSizeOptionObj("volumeSourceResurfacerSizeOptionObj_Cylinder" + std::to_string(i+1));
+            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionObj_Cylinder" + std::to_string(i+1));
             codeBuffer = {
                     "",
                     "        /*",
@@ -169,22 +174,105 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
                     "",
                     "        // SIZING",
                     "        // Create volume source and select the cylinder",
-                    "        VolumeSource " + volumeSourceCylinderObj + " = meshContinuumObj.getVolumeSources().createVolumeSource();",
-                    "        " + volumeSourceCylinderObj + ".getPartGroup().setQuery(null);",
-                    "        " + volumeSourceCylinderObj + ".getPartGroup().setObjects(" + simpleCylinderPartObj + ");",
+                    "        VolumeSource " + volumeSourceObj + " = meshContinuumObj.getVolumeSources().createVolumeSource();",
+                    "        " + volumeSourceObj + ".getPartGroup().setQuery(null);",
+                    "        " + volumeSourceObj + ".getPartGroup().setObjects(" + simpleCylinderPartObj + ");",
                     "        // Set surface size absolute",
-                    "         VolumeSourceDualMesherSizeOption " + volumeSourceDualMesherSizeOptionCylinderObj + " = " + volumeSourceCylinderObj + ".get(MeshConditionManager.class).get(VolumeSourceDualMesherSizeOption.class);",
-                    "         " + volumeSourceDualMesherSizeOptionCylinderObj + ".setVolumeSourceDualMesherSizeOption(true);",
-                    "         VolumeSourceSize " + volumeSourceSizeCylinderObj + " = " + volumeSourceCylinderObj + ".get(MeshValueManager.class).get(VolumeSourceSize.class);",
-                    "         " + volumeSourceSizeCylinderObj + ".getRelativeOrAbsoluteOption().setSelected(RelativeOrAbsoluteOption.Type.ABSOLUTE);",
+                    "         VolumeSourceDualMesherSizeOption " + volumeSourceDualMesherSizeOptionObj + " = " + volumeSourceObj + ".get(MeshConditionManager.class).get(VolumeSourceDualMesherSizeOption.class);",
+                    "         " + volumeSourceDualMesherSizeOptionObj + ".setVolumeSourceDualMesherSizeOption(true);",
+                    "         VolumeSourceSize " + volumeSourceSizeObj + " = " + volumeSourceObj + ".get(MeshValueManager.class).get(VolumeSourceSize.class);",
+                    "         " + volumeSourceSizeObj + ".getRelativeOrAbsoluteOption().setSelected(RelativeOrAbsoluteOption.Type.ABSOLUTE);",
                     "         // Surface size",
-                    "         AbsoluteSize " + absoluteSizeCylinderObj + " = ((AbsoluteSize) " + volumeSourceSizeCylinderObj + ".getAbsoluteSizeValue());",
-                    "         " + absoluteSizeCylinderObj + ".getValue().setValue(" + valueSurfaceSize + ");",
+                    "         AbsoluteSize " + absoluteSizeObj + " = ((AbsoluteSize) " + volumeSourceSizeObj + ".getAbsoluteSizeValue());",
+                    "         " + absoluteSizeObj + ".getValue().setValue(" + valueSurfaceSize + ");",
                     "         // Surface remesher",
-                    "         VolumeSourceResurfacerSizeOption " + volumeSourceResurfacerSizeOptionCylinderObj + " = " + volumeSourceCylinderObj+ ".get(MeshConditionManager.class).get(VolumeSourceResurfacerSizeOption.class);",
-                    "         " + volumeSourceResurfacerSizeOptionCylinderObj + ".setVolumeSourceResurfacerSizeOption(true);",
+                    "         VolumeSourceResurfacerSizeOption " + volumeSourceResurfacerSizeOptionObj + " = " + volumeSourceObj+ ".get(MeshConditionManager.class).get(VolumeSourceResurfacerSizeOption.class);",
+                    "         " + volumeSourceResurfacerSizeOptionObj + ".setVolumeSourceResurfacerSizeOption(true);",
                     "        // Surface wrapper",
-                    "        VolumeSourceSurfaceWrapperSizeOption " + volumeSourceSurfaceWrapperSizeOptionObj + " = " + volumeSourceCylinderObj + ".get(MeshConditionManager.class).get(VolumeSourceSurfaceWrapperSizeOption.class);",
+                    "        VolumeSourceSurfaceWrapperSizeOption " + volumeSourceSurfaceWrapperSizeOptionObj + " = " + volumeSourceObj + ".get(MeshConditionManager.class).get(VolumeSourceSurfaceWrapperSizeOption.class);",
+                    "        " + volumeSourceSurfaceWrapperSizeOptionObj + ".setVolumeSourceSurfaceWrapperSizeOption(true);"
+            };
+            code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+        }
+    }
+
+    // Cones
+    if(!cone.surfaceSize.empty()){
+        for(int i = 0; i < cone.surfaceSize.size(); i++){
+            // Variable names
+            std::string valueBaseX1("valueBaseX1_Cone" + std::to_string(i+1));
+            std::string valueBaseY1("valueBaseY1_Cone" + std::to_string(i+1));
+            std::string valueBaseZ1("valueBaseZ1_Cone" + std::to_string(i+1));
+            std::string valueBaseX2("valueBaseX2_Cone" + std::to_string(i+1));
+            std::string valueBaseY2("valueBaseY2_Cone" + std::to_string(i+1));
+            std::string valueBaseZ2("valueBaseZ2_Cone" + std::to_string(i+1));
+            std::string valueRadius1("valueRadius1_Cone" + std::to_string(i+1));
+            std::string valueRadius2("valueRadius2_Cone" + std::to_string(i+1));
+            std::string valueSurfaceSize("valueSurfaceSize_Cone" + std::to_string(i+1));
+            std::string simpleConePartObj("simpleConePartObj_Cone" + std::to_string(i+1));
+            std::string coordinateBase1("coordinateBase1_Cone" + std::to_string(i+1));
+            std::string coordinateBase2("coordinateBase2_Cone" + std::to_string(i+1));
+            std::string volumeSourceObj("volumeSourceObj_Cone" + std::to_string(i+1));
+            std::string volumeSourceDualMesherSizeOptionObj("volumeSourceDualMesherSizeOptionObj_Cone" + std::to_string(i+1));
+            std::string volumeSourceSizeObj("volumeSourceSizeObj_Cone" + std::to_string(i+1));
+            std::string absoluteSizeObj("absoluteSizeObj_Cone" + std::to_string(i+1));
+            std::string volumeSourceResurfacerSizeOptionObj("volumeSourceResurfacerSizeOptionObj_Cone" + std::to_string(i+1));
+            std::string volumeSourceSurfaceWrapperSizeOptionObj("volumeSourceSurfaceWrapperSizeOptionObj_Cone" + std::to_string(i+1));
+            codeBuffer = {
+                    "",
+                    "        /*",
+                    "         * CONE " + std::to_string(i + 1),
+                    "         */",
+                    "",
+                    "        // Data",
+                    "        double " + valueBaseX1 + "      = " + std::to_string(cone.x1[i]) + ";",
+                    "        double " + valueBaseY1 + "      = " + std::to_string(cone.y1[i]) + ";",
+                    "        double " + valueBaseZ1 + "      = " + std::to_string(cone.z1[i]) + ";",
+                    "        double " + valueBaseX2 + "      = " + std::to_string(cone.x2[i]) + ";",
+                    "        double " + valueBaseY2 + "      = " + std::to_string(cone.y2[i]) + ";",
+                    "        double " + valueBaseZ2 + "      = " + std::to_string(cone.z2[i]) + ";",
+                    "        double " + valueRadius1 + "     = " + std::to_string(cone.radius_1[i]) + ";",
+                    "        double " + valueRadius2 + "     = " + std::to_string(cone.radius_2[i]) + ";",
+                    "        double " + valueSurfaceSize + " = " + std::to_string(cone.surfaceSize[i]) + ";",
+                    "",
+                    "        // GENERATE CONE",
+                    "        // Create new simple cone part object",
+                    "        SimpleConePart " + simpleConePartObj + " = meshPartFactoryObj.createNewConePart(activeSimulation.get(SimulationPartManager.class));",
+                    "        // Set coordinate system",
+                    "        " + simpleConePartObj + ".setCoordinateSystem(labCoordinateSystemObj);",
+                    "        // Base 1",
+                    "        Coordinate " + coordinateBase1 + " = " + simpleConePartObj + ".getStartCoordinate();",
+                    "        " + coordinateBase1 + ".setCoordinateSystem(labCoordinateSystemObj);",
+                    "        " + coordinateBase1 + ".setCoordinate(unitsObj, unitsObj, unitsObj, new DoubleVector(new double[] {" + valueBaseX1+ ", " + valueBaseY1 + ", " + valueBaseZ1 + "}));",
+                    "        " + simpleConePartObj + ".getStartRadius().setUnits(unitsObj);",
+                    "        " + simpleConePartObj + ".getStartRadius().setValue(" + valueRadius1 + ");",
+                    "        // Base 2",
+                    "        Coordinate " + coordinateBase2 + " = " + simpleConePartObj + ".getStartCoordinate();"
+                    "        " + coordinateBase2 + ".setCoordinateSystem(labCoordinateSystemObj);",
+                    "        " + coordinateBase2 + ".setCoordinate(unitsObj, unitsObj, unitsObj, new DoubleVector(new double[] {" + valueBaseX2+ ", " + valueBaseY2 + ", " + valueBaseZ2 + "}));",
+                    "        " + simpleConePartObj + ".getEndRadius().setUnits(unitsObj);",
+                    "        " + simpleConePartObj + ".getEndRadius().setValue(" + valueRadius2 + ");",
+                    "        // Presentation name",
+                    "        " + simpleConePartObj + ".setPresentationName(\"Cone " + std::to_string(i+1) +"\");",
+                    "",
+                    "        // SIZING",
+                    "        // Create volume source and select the cylinder",
+                    "        VolumeSource " + volumeSourceObj + " = meshContinuumObj.getVolumeSources().createVolumeSource();",
+                    "        " + volumeSourceObj + ".getPartGroup().setQuery(null);",
+                    "        " + volumeSourceObj + ".getPartGroup().setObjects(" + simpleConePartObj + ");",
+                    "        // Set surface size absolute",
+                    "         VolumeSourceDualMesherSizeOption " + volumeSourceDualMesherSizeOptionObj + " = " + volumeSourceObj + ".get(MeshConditionManager.class).get(VolumeSourceDualMesherSizeOption.class);",
+                    "         " + volumeSourceDualMesherSizeOptionObj + ".setVolumeSourceDualMesherSizeOption(true);",
+                    "         VolumeSourceSize " + volumeSourceSizeObj + " = " + volumeSourceObj + ".get(MeshValueManager.class).get(VolumeSourceSize.class);",
+                    "         " + volumeSourceSizeObj + ".getRelativeOrAbsoluteOption().setSelected(RelativeOrAbsoluteOption.Type.ABSOLUTE);",
+                    "         // Surface size",
+                    "         AbsoluteSize " + absoluteSizeObj + " = ((AbsoluteSize) " + volumeSourceSizeObj + ".getAbsoluteSizeValue());",
+                    "         " + absoluteSizeObj + ".getValue().setValue(" + valueSurfaceSize + ");",
+                    "         // Surface remesher",
+                    "         VolumeSourceResurfacerSizeOption " + volumeSourceResurfacerSizeOptionObj + " = " + volumeSourceObj+ ".get(MeshConditionManager.class).get(VolumeSourceResurfacerSizeOption.class);",
+                    "         " + volumeSourceResurfacerSizeOptionObj + ".setVolumeSourceResurfacerSizeOption(true);",
+                    "        // Surface wrapper",
+                    "        VolumeSourceSurfaceWrapperSizeOption " + volumeSourceSurfaceWrapperSizeOptionObj + " = " + volumeSourceObj + ".get(MeshConditionManager.class).get(VolumeSourceSurfaceWrapperSizeOption.class);",
                     "        " + volumeSourceSurfaceWrapperSizeOptionObj + ".setVolumeSourceSurfaceWrapperSizeOption(true);"
             };
             code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());

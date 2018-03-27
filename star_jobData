@@ -1,23 +1,5 @@
 #BEGIN_STAR_JOB
 
-#BEGIN_VOLUMETRIC_CONTROLS
-block
-corner_1              -1.00  -0.25 -0.75
-corner_2               3.00   1.60  0.75
-surface_size           0.05
-cylinder
-base_1                -0.05 -0.10  0
-base_2                 0.70  1.20  0
-radius                 0.03
-surface_size           0.01
-cone
-base_1                 0    -0.25  0
-base_2                 0     3.00  0
-radius_1               5
-radius_2               2.5
-surface_size           0.1
-#END_VOLUMETRIC_CONTROLS
-
 #BEGIN_JOB_SETUP
 job_name                mightySim
 //initialization_job      mightySimInit
@@ -41,10 +23,30 @@ base_size               0.5
 num_prism_layers        10
 prism_layer_thickness   0.01
 near_wall_thickness     0.000077
-surface_size            SurfMesh        0.05
+surface_size            SurfMesh        0.025
 surface_size            FarField        3
 surface_size            Sym             3
 #END_MESH_MODEL
+
+#BEGIN_VOLUMETRIC_CONTROLS
+//block
+corner_1              -1.00  -0.25 -0.75
+corner_2               3.00   1.60  0.75
+surface_size           0.05
+
+cylinder
+base_1                -0.05 -0.10  0
+base_2                 0.70  1.20  0
+radius                 0.03
+surface_size           0.005
+
+cone
+base_1                 1.10  1.18  0
+base_2                 5.00  1.18  0
+radius_1               0.03
+radius_2               0.5
+surface_size           0.05
+#END_VOLUMETRIC_CONTROLS
 
 #BEGIN_PHYSICS_MODEL
 dynamic_viscosity       0.0000639

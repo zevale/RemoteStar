@@ -72,4 +72,16 @@ struct Cylinder {
     std::vector<double> surfaceSize;
 };
 
+struct Cone {
+    std::vector<double> x1;
+    std::vector<double> y1;
+    std::vector<double> z1;
+    std::vector<double> x2;
+    std::vector<double> y2;
+    std::vector<double> z2;
+    std::vector<double> radius_1;
+    std::vector<double> radius_2;
+    std::vector<double> surfaceSize;
+};
+
 #endif //MIGHTYTYPES_H

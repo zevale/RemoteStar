@@ -86,7 +86,16 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                              currentStarJob->getCylinderY2(),
                                              currentStarJob->getCylinderZ2(),
                                              currentStarJob->getCylinderRadius(),
-                                             currentStarJob->getCylinderSurfaceSize()});
+                                             currentStarJob->getCylinderSurfaceSize()},
+                                            {currentStarJob->getConeX1(),
+                                             currentStarJob->getConeY1(),
+                                             currentStarJob->getConeZ1(),
+                                             currentStarJob->getConeX2(),
+                                             currentStarJob->getConeY2(),
+                                             currentStarJob->getConeZ2(),
+                                             currentStarJob->getConeRadius1(),
+                                             currentStarJob->getConeRadius2(),
+                                             currentStarJob->getConeSurfaceSize()});
 
     // Physics values assignment (mach, viscosity, ref. pressure, static temp., flow direction, velocity components)
     physicsValues = PhysicsValues(currentStarJob->getMachNumber(),
@@ -249,7 +258,9 @@ void MightyMacro::writeExecute() {
 
 
     // Check volumetric controls
-    if(!volumetricControls.getBlock().surfaceSize.empty() || !volumetricControls.getCylinder().surfaceSize.empty())
+    if(!volumetricControls.getBlock().surfaceSize.empty()         ||
+            !volumetricControls.getCylinder().surfaceSize.empty() ||
+            !volumetricControls.getCone().surfaceSize.empty())
         code.emplace_back("        volumetricControls();");
 
     // Mandatory
@@ -348,7 +359,9 @@ void MightyMacro::writeMeshValues() {
 
 void MightyMacro::writeVolumetricControls() {
     // Check volumetric control options
-    if(!volumetricControls.getBlock().surfaceSize.empty() || !volumetricControls.getCylinder().surfaceSize.empty()){
+    if(!volumetricControls.getBlock().surfaceSize.empty()         ||
+            !volumetricControls.getCylinder().surfaceSize.empty() ||
+            !volumetricControls.getCone().surfaceSize.empty()){
         writeToFile(volumetricControls.volumetricControlsCode());
     }
 }
