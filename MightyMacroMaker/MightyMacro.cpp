@@ -310,6 +310,11 @@ void MightyMacro::writeDomain() {
 }
 
 void MightyMacro::writeRegion() {
+
+    // Only run for for new simulations
+    if(hasInitialization)
+        return;
+
     std::vector<std::string> code;
     code = {
             "",
@@ -333,8 +338,7 @@ void MightyMacro::writeRegion() {
             "        activeSimulation.getRegionManager().newRegionsFromParts(new NeoObjectVector(new Object[] {meshOperationObj}), \"OneRegion\", regionAir, \"OneBoundaryPerPartSurface\", null, \"OneFeatureCurvePerPartCurve\", null, RegionManager.CreateInterfaceMode.BOUNDARY);",
             "    }",
     };
-    if(!hasInitialization)
-        writeToFile(code);
+    writeToFile(code);
 }
 
 void MightyMacro::writeMeshContinuum() {
@@ -358,7 +362,7 @@ void MightyMacro::writeMeshValues() {
 }
 
 void MightyMacro::writeVolumetricControls() {
-    // Check volumetric control options
+    // Check volumetric control options exist
     if(!volumetricControls.getBlock().surfaceSize.empty()         ||
             !volumetricControls.getCylinder().surfaceSize.empty() ||
             !volumetricControls.getCone().surfaceSize.empty()){
@@ -384,6 +388,11 @@ void MightyMacro::writeStoppingCriteria() {
 }
 
 void MightyMacro::writeGenerateMesh() {
+
+    // No need to run if mesh is the same
+    if(!newMesh)
+        return;
+
     std::vector<std::string> code;
     code = {
             "",
@@ -400,8 +409,7 @@ void MightyMacro::writeGenerateMesh() {
             "        activeSimulation.getSceneManager().createGeometryScene(\"Mesh Scene\", \"Outline\", \"Mesh\", 3);",
             "    }"
     };
-    if(newMesh)
-        writeToFile(code);
+    writeToFile(code);
 }
 
 void MightyMacro::writeMightyScene() {
@@ -436,6 +444,11 @@ void MightyMacro::writeCloseSim() {
 }
 
 void MightyMacro::writeSimCleanup() {
+
+    // No need to run for new simulations
+    if(!hasInitialization)
+        return;
+
     std::vector<std::string> code;
     std::vector<std::string> codeBuffer;
 
@@ -478,6 +491,5 @@ void MightyMacro::writeSimCleanup() {
     };
     code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
-    if(hasInitialization)
-        writeToFile(code);
+    writeToFile(code);
 }

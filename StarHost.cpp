@@ -1,6 +1,7 @@
 #include "StarHost.h"
 #include "MightyMacroMaker/MightyConstants.h"
 #include "star_client.h"
+#include "exit_codes.h"
 
 #include <iostream>
 #include <vector>
@@ -61,8 +62,10 @@ void StarHost::loadHostList() {
     std::ifstream hostListFile("./servers/star_hostList");
 
     // Check if file is open
-    if(!hostListFile.is_open())
+    if(!hostListFile.is_open()){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_HOST_LIST_CANNOT_OPEN);
         throw "Cannot open file <star_hostList>";
+    }
 
     // Read <star_hostList> status
     int numLocalhost = 0;

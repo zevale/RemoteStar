@@ -16,6 +16,10 @@
 #include <cstring>
 #include "star_client.h"
 #include "MightyMacroMaker/MightyMacro.h"
+#include "exit_codes.h"
+
+// Program status must be declared as global variable "g_exitStatus"
+int g_exitStatus = static_cast<int>(ExitCodes::SUCCESS);
 
 int main(int argc, char * argv[]) {
     bool         batchModeOption = false;
@@ -44,8 +48,9 @@ int main(int argc, char * argv[]) {
         default:
             std::cout << ":::::::::::: RemoteStar\n";
             std::cout << "Usage [job file path]\n";
-            std::cout << "      [-batch batch mode on] [job file path]" << std::endl;
-            return EXIT_FAILURE;
+            std::cout << "      [-batch (batch mode on)] [job file path]" << std::endl;
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_COMMAND_LINE_USAGE);
+            exit(g_exitStatus);
     }
 
 
@@ -68,14 +73,14 @@ int main(int argc, char * argv[]) {
     if(!initializeStarHost(starHost, starJob))
         exitNow("TERMINATING: cannot initialize hosts");
 
-    // Submit job
-    submitJob(sshConnection, starJob);
+//    // Submit job
+//    submitJob(sshConnection, starJob);
 
     // Fetch results
     if(!fetchResults(sshConnection, starJob))
         exitNow("\nTERMINATING: error(s) while fetching results\n");
     else
-        colorText("FETCHED RESULTS FROM SERVER!\n", GREEN);
+        colorText("\nFETCHED RESULTS FROM SERVER!\n", GREEN);
 
-    return EXIT_SUCCESS;
+    return g_exitStatus;
 }

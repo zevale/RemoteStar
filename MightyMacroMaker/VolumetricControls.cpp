@@ -247,7 +247,7 @@ std::vector<std::string> VolumetricControls::volumetricControlsCode() {
                     "        " + simpleConePartObj + ".getStartRadius().setUnits(unitsObj);",
                     "        " + simpleConePartObj + ".getStartRadius().setValue(" + valueRadius1 + ");",
                     "        // Base 2",
-                    "        Coordinate " + coordinateBase2 + " = " + simpleConePartObj + ".getStartCoordinate();"
+                    "        Coordinate " + coordinateBase2 + " = " + simpleConePartObj + ".getEndCoordinate();",
                     "        " + coordinateBase2 + ".setCoordinateSystem(labCoordinateSystemObj);",
                     "        " + coordinateBase2 + ".setCoordinate(unitsObj, unitsObj, unitsObj, new DoubleVector(new double[] {" + valueBaseX2+ ", " + valueBaseY2 + ", " + valueBaseZ2 + "}));",
                     "        " + simpleConePartObj + ".getEndRadius().setUnits(unitsObj);",

@@ -29,7 +29,7 @@ surface_size            Sym             3
 #END_MESH_MODEL
 
 #BEGIN_VOLUMETRIC_CONTROLS
-//block
+block
 corner_1              -1.00  -0.25 -0.75
 corner_2               3.00   1.60  0.75
 surface_size           0.05
@@ -45,7 +45,7 @@ base_1                 1.10  1.18  0
 base_2                 5.00  1.18  0
 radius_1               0.03
 radius_2               0.5
-surface_size           0.05
+surface_size           0.025
 #END_VOLUMETRIC_CONTROLS
 
 #BEGIN_PHYSICS_MODEL

@@ -2,6 +2,7 @@
 #include "MightyMacroMaker/MightyConstants.h"
 #include "star_client.h"
 #include "MightyMacroMaker/MightyMath.h"
+#include "exit_codes.h"
 
 #include <fstream>
 #include <iostream>
@@ -322,8 +323,10 @@ void StarJob::loadStarJob() {
     std::ifstream starJobFile(jobFilePath);
 
     // Check if file is open
-    if(!starJobFile.is_open())
+    if(!starJobFile.is_open()){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CANNOT_OPEN);
         throw "Cannot open file <star_jobData>";
+    }
 
     // PARSER AUXILIARY VARIABLES (flags)
 
@@ -450,8 +453,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word) {
                         jobName = word;
                         hasJobName = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_JOB_NAME_EMPTY);
                         throw "<job_name> is empty";
+                    }
                 }
 
                 // Check for initialization_job
@@ -459,8 +464,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word) {
                         initializationJob = word;
                         hasInitialization = true;
-                    } else
+                    } else{
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_INITIALIZATION_JOB_EMPTY);
                         throw "<initialization_job> is empty";
+                    }
                 }
 
                 // Check for client_directory
@@ -468,8 +475,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word) {
                         clientDirectory = word;
                         hasClientDirectory = true;
-                    } else
+                    } else{
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CLIENT_DIRECTORY_EMPTY);
                         throw "<client_directory> is empty";
+                    }
                 }
 
                 // Check for server_directory
@@ -477,8 +486,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         serverDirectory = word;
                         hasServerDirectory = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SERVER_DIRECTORY_EMPTY);
                         throw "<server_directory> is empty";
+                    }
                 }
 
                 // Check save_sim_file
@@ -490,10 +501,14 @@ void StarJob::loadStarJob() {
                         } else if(word == "no"){
                             saveSimFile = false;
                             hasSaveSimFile = true;
-                        } else
+                        } else {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SAVE_SIM_FILE_USAGE);
                             throw "usage <save_sim_file> yes/no";
-                    } else
+                        }
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SAVE_SIM_FILE_EMPTY);
                         throw "<save_sim_file> is empty";
+                    }
                 }
 
                 // Check clean_server
@@ -505,10 +520,14 @@ void StarJob::loadStarJob() {
                         } else if(word == "no"){
                             cleanServer = false;
                             hasCleanServer = true;
-                        } else
+                        } else {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CLEAN_SERVER_USAGE);
                             throw "usage <clean_server> yes/no";
-                    } else
+                        }
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CLEAN_SERVER_EMPTY);
                         throw "<clean_server> is empty";
+                    }
                 }
 
                 // Check auto_save
@@ -520,10 +539,14 @@ void StarJob::loadStarJob() {
                         } else if(word == "no"){
                             autoSaveSimulation = false;
                             hasAutoSave = false;
-                        } else
+                        } else {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_USAGE);
                             throw "usage <auto_save> yes/no";
-                    } else
+                        }
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_EMPTY);
                         throw "<auto_save> is empty";
+                    }
                 }
 
                 // Check auto_save_files
@@ -531,8 +554,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         numAutoSaveFiles = std::stoi(word, nullptr);
                         hasAutoSaveFiles = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_FILES_EMPTY);
                         throw "<auto_save_files> is empty";
+                    }
                 }
 
                 // Check auto_save_iterations
@@ -540,8 +565,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         iterationInterval = std::stoi(word, nullptr);
                         hasAutoSaveIterations = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_EMPTY);
                         throw "<auto_save_iterations> is empty";
+                    }
                 }
 
                 // Check #END_JOB_SETUP
@@ -557,20 +584,35 @@ void StarJob::loadStarJob() {
                         hasBeginJobSetup = false;
                     } else {
                         // Missing data
-                        if(!hasJobName)
+                        if(!hasJobName){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_JOB_NAME_MISSING);
                             throw "<job_name> is missing";
-                        if(!hasServerDirectory)
-                            throw "<server_directory> is missing";
-                        if(!hasClientDirectory)
+                        }
+                        if(!hasClientDirectory){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CLIENT_DIRECTORY_MISSING);
                             throw "<client_directory> is missing";
-                        if(!hasSaveSimFile)
+                        }
+                        if(!hasServerDirectory){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SERVER_DIRECTORY_MISSING);
+                            throw "<server_directory> is missing";
+                        }
+                        if(!hasSaveSimFile){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SAVE_SIM_FILE_MISSING);
                             throw "<save_sim_file> is missing";
-                        if(!hasCleanServer)
+                        }
+
+                        if(!hasCleanServer){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CLEAN_SERVER_MISSING);
                             throw "<clean_server> is missing";
-                        if(hasAutoSave && !hasAutoSaveFiles)
+                        }
+                        if(hasAutoSave && !hasAutoSaveFiles){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_FILES_MISSING);
                             throw "<auto_save_files> is missing";
-                        if(hasAutoSave && !hasAutoSaveIterations)
+                        }
+                        if(hasAutoSave && !hasAutoSaveIterations){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_MISSING);
                             throw "<auto_save_iterations> is missing";
+                        }
                     }
                 }
             }
@@ -595,8 +637,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         regionName.push_back(word);
                         hasOneWall = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_WALL_REGION_MISSING_NAME);
                         throw "wall region is missing name";
+                    }
                 }
 
                 // Check free stream region
@@ -605,8 +649,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         regionName.push_back(word);
                         hasOneFreeStream = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FREE_STREAM_REGION_MISSING_NAME);
                         throw "free stream region is missing name";
+                    }
                 }
 
                 // Check symmetry plane region
@@ -614,8 +660,10 @@ void StarJob::loadStarJob() {
                     boundaryCondition.emplace_back("symmetryPlane");
                     if(issLine >> word)
                         regionName.push_back(word);
-                    else
-                        throw "symmetry plane region is missing";;
+                    else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SYMMETRY_PLANE_REGION_MISSING_NAME);
+                        throw "symmetry plane region is missing name";
+                    }
                 }
 
                 // Check #END_REGIONS
@@ -630,10 +678,14 @@ void StarJob::loadStarJob() {
                         hasBeginRegions = false;
                     } else {
                         // Missing data
-                        if(!hasOneWall)
+                        if(!hasOneWall) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_WALL_REGION_MISSING);
                             throw "wall region is missing";
-                        if(!hasOneFreeStream)
+                        }
+                        if(!hasOneFreeStream){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FREE_STREAM_REGION_MISSING);
                             throw "free stream region is missing";
+                        }
                     }
                 }
             }
@@ -657,8 +709,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         baseSize = std::stod(word, nullptr);
                         hasBaseSize = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BASE_SIZE_EMPTY);
                         throw "<base_size> is empty";
+                    }
                 }
 
                 // Check num_prism_layers
@@ -667,12 +721,16 @@ void StarJob::loadStarJob() {
                         prismLayers = std::stoi(word, nullptr);
 
                         // Check data
-                        if(prismLayers < 1)
+                        if(prismLayers < 1){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_PRISM_LAYER_INVALID);
                             throw "<num_prism_layers> >= 1";
+                        }
 
                         hasPrismLayers = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_EMPTY);
                         throw "<num_prism_layers> is empty";
+                    }
                 }
 
                 // Check prism_layer_thickness
@@ -680,8 +738,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         prismLayerThickness = std::stod(word, nullptr);
                         hasPrismLayerThickness = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_THICKNESS_EMPTY);
                         throw "<prism_layer_thickness> is empty";
+                    }
                 }
 
                 // Check near_wall_thickness
@@ -689,8 +749,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         nearWallThickness = std::stod(word, nullptr);
                         hasNearWallThickness = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NEAR_WALL_THICKNESS_EMPTY);
                         throw "<near_wall_thickness> is empty";
+                    }
                 }
 
                 // Check surface_size
@@ -701,10 +763,14 @@ void StarJob::loadStarJob() {
                         // Then get surface size
                         if(issLine >> word){
                             surfaceSize.push_back(stod(word, nullptr));
-                        } else
-                            throw "<surface_size> has no surface size";
-                    } else
-                        throw "<surface_size> has no name";
+                        } else {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_VALUE_EMPTY);
+                            throw "<surface_size> value is empty";
+                        }
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_NAME_EMPTY);
+                        throw "<surface_size> name is empty";
+                    }
 
                     // Check if at leas two surface sizes have been entered (aircraft + freestream)
                     if(surfaceSize.size() == 2)
@@ -729,14 +795,22 @@ void StarJob::loadStarJob() {
                         hasBeginMeshModel = false;
                     } else {
                         // Missing data
-                        if(hasPrismLayers && !hasPrismLayerThickness)
+                        if(hasPrismLayers && !hasPrismLayerThickness){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_THICKNESS_MISSING);
                             throw "<prism_layer_thickness> is missing";
-                        if(hasPrismLayers && !hasNearWallThickness)
+                        }
+                        if(hasPrismLayers && !hasNearWallThickness){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NEAR_WALL_THICKNESS_MISSING);
                             throw "<near_wall_thickness> is missing";
-                        if(!hasPrismLayers && (hasPrismLayerThickness || hasNearWallThickness))
+                        }
+                        if(!hasPrismLayers && (hasPrismLayerThickness || hasNearWallThickness)){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_PRISM_LAYER_MISSING);
                             throw "<num_prism_layers> is missing";
-                        if(!hasTwoSurfaceSizes)
+                        }
+                        if(!hasTwoSurfaceSizes){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_ENTRIES);
                             throw "needs at least two surface sizes";
+                        }
                     }
                 }
 
@@ -796,8 +870,10 @@ void StarJob::loadStarJob() {
                                         coordinates++;
                                     }
                                     // Check all coordinates
-                                    if(coordinates != 3)
-                                        throw " block <corner_1> is missing data";
+                                    if(coordinates != 3){
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_MISSING_DATA);
+                                        throw "block <corner_1> is missing data";
+                                    }
                                 }
 
                                 // Check block corner_2
@@ -815,8 +891,10 @@ void StarJob::loadStarJob() {
                                         coordinates++;
                                     }
                                     // Check all coordinates
-                                    if(coordinates != 3)
+                                    if(coordinates != 3){
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_MISSING_DATA);
                                         throw "<corner_2> is missing data";
+                                    }
                                 }
 
                                 // Check surface_size
@@ -824,11 +902,13 @@ void StarJob::loadStarJob() {
                                     if(issLine >> word){
                                         blockSurfaceSize.emplace_back(std::stod(word, nullptr));
                                         hasBlockSurfaceSize = true;
-                                    } else
+                                    } else {
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_EMPTY);
                                         throw "block <surface_size> is empty";
+                                    }
                                 }
 
-                                // Check for new part tags arriving too early
+                                // Check for new part tags arriving too early and stop getting words
                                 if(word == "block" || word == "cone" || word == "cylinder")
                                     break;
                             }
@@ -837,14 +917,24 @@ void StarJob::loadStarJob() {
                                 // Stop getting block lines
                                 break;
                             }
+
+                            // Check for new parts and stop getting lines
+                            if(word == "block" || word == "cone" || word == "cylinder")
+                                break;
                         }
                         // Missing data
-                        if(!hasBlockCorner1)
+                        if(!hasBlockCorner1){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_MISSING);
                             throw "block <corner_1> is missing";
-                        if(!hasBlockCorner2)
+                        }
+                        if(!hasBlockCorner2){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_MISSING);
                             throw "block <corner_2> is missing";
-                        if(!hasBlockSurfaceSize)
+                        }
+                        if(!hasBlockSurfaceSize){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_MISSING);
                             throw "block <surface_size> is missing";
+                        }
 //                        // Get words from line into issLine and word
 //                        issLine.str("");            // Empty issLine
 //                        issLine.clear();            // Clear stream's error state
@@ -885,8 +975,10 @@ void StarJob::loadStarJob() {
                                         coordinates++;
                                     }
                                     // Check all coordinates
-                                    if(coordinates != 3)
+                                    if(coordinates != 3){
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_MISSING_DATA);
                                         throw "cylinder <base_1> is missing data";
+                                    }
                                 }
 
                                 // Check cylinder base_2
@@ -904,8 +996,10 @@ void StarJob::loadStarJob() {
                                         coordinates++;
                                     }
                                     // Check all coordinates
-                                    if(coordinates != 3)
+                                    if(coordinates != 3){
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_MISSING_DATA);
                                         throw "cylinder <base_2> is missing data";
+                                    }
                                 }
 
                                 // Check radius tag
@@ -913,8 +1007,10 @@ void StarJob::loadStarJob() {
                                     if(issLine >> word){
                                         cylinderRadius.emplace_back(std::stod(word, nullptr));
                                         hasCylinderRadius = true;
-                                    } else
+                                    } else {
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_RADIUS_EMPTY);
                                         throw "cylinder <radius> is empty";
+                                    }
                                 }
 
                                 // Check surface_size
@@ -922,11 +1018,13 @@ void StarJob::loadStarJob() {
                                     if(issLine >> word){
                                         cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
                                         hasCylinderSurfaceSize = true;
-                                    } else
+                                    } else {
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_EMPTY);
                                         throw "cylinder <surface_size> is empty";
+                                    }
                                 }
 
-                                // Check for new part tags arriving too early
+                                // Check for new part tags arriving too early and stop getting words
                                 if(word == "block" || word == "cone" || word == "cylinder")
                                     break;
                             }
@@ -935,16 +1033,25 @@ void StarJob::loadStarJob() {
                                 // Stop getting cylinder data
                                 break;
                             }
+
+                            // Check for new parts and stop getting lines
+                            if(word == "block" || word == "cone" || word == "cylinder")
+                                break;
                         }
                         // Missing data
-                        if(!hasCylinderBase1)
+                        if(!hasCylinderBase1){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_MISSING);
                             throw "cylinder <base_1> is missing";
-                        if(!hasCylinderBase2)
-                            throw "cylinder <base_2> is missing";
-                        if(!hasCylinderRadius)
-                            throw "cylinder <radius> is missing";
-                        if(!hasCylinderSurfaceSize)
-                            throw "cylinder <surface_size> is missing";
+                        }
+                        if(!hasCylinderBase2){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_MISSING);
+                            throw "cylinder <base_2> is missing";}
+                        if(!hasCylinderRadius){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_RADIUS_MISSING);
+                            throw "cylinder <radius> is missing";}
+                        if(!hasCylinderSurfaceSize){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_MISSING);
+                            throw "cylinder <surface_size> is missing";}
 //                        // Get words from line into issLine and word
 //                        issLine.str("");            // Empty issLine
 //                        issLine.clear();            // Clear stream's error state
@@ -986,8 +1093,10 @@ void StarJob::loadStarJob() {
                                         coordinates++;
                                     }
                                     // Check all coordinates
-                                    if(coordinates != 3)
+                                    if(coordinates != 3){
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_MISSING_DATA);
                                         throw "cone <base_1> is missing data";
+                                    }
                                 }
 
                                 // Check cone base_2
@@ -1005,8 +1114,10 @@ void StarJob::loadStarJob() {
                                         coordinates++;
                                     }
                                     // Check all coordinates
-                                    if(coordinates != 3)
+                                    if(coordinates != 3){
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_MISSING_DATA);
                                         throw "cone <base_2> is missing data";
+                                    }
                                 }
 
                                 // Check radius_1 tag
@@ -1014,8 +1125,10 @@ void StarJob::loadStarJob() {
                                     if(issLine >> word){
                                         coneRadius1.emplace_back(std::stod(word, nullptr));
                                         hasConeRadius1 = true;
-                                    } else
+                                    } else {
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_1_EMPTY);
                                         throw "cone <radius_1> is empty";
+                                    }
                                 }
 
                                 // Check radius_2 tag
@@ -1023,8 +1136,10 @@ void StarJob::loadStarJob() {
                                     if(issLine >> word){
                                         coneRadius2.emplace_back(std::stod(word, nullptr));
                                         hasConeRadius2 = true;
-                                    } else
+                                    } else {
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_2_EMPTY);
                                         throw "cone <radius_2> is empty";
+                                    }
                                 }
 
                                 // Check surface_size
@@ -1032,11 +1147,13 @@ void StarJob::loadStarJob() {
                                     if(issLine >> word){
                                         coneSurfaceSize.emplace_back(std::stod(word, nullptr));
                                         hasConeSurfaceSize = true;
-                                    } else
+                                    } else {
+                                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_EMPTY);
                                         throw "cone <surface_size> is empty";
+                                    }
                                 }
 
-                                // Check for new part tags arriving too early
+                                // Check for new part tags arriving too early and stop getting words
                                 if(word == "block" || word == "cylinder" || word == "cone" )
                                     break;
                             }
@@ -1046,18 +1163,32 @@ void StarJob::loadStarJob() {
                                 // Stop getting cylinder data
                                 break;
                             }
+
+                            // Check for new parts and stop getting lines
+                            if(word == "block" || word == "cone" || word == "cylinder")
+                                break;
                         }
                         // Missing data
-                        if(!hasConeBase1)
+                        if(!hasConeBase1){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_MISSING);
                             throw "cone <base_1> is missing";
-                        if(!hasConeBase2)
+                        }
+                        if(!hasConeBase2){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_MISSING);
                             throw "cone <base_2> is missing";
-                        if(!hasConeRadius1)
+                        }
+                        if(!hasConeRadius1){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_1_MISSING);
                             throw "cone <radius_1> is missing";
-                        if(!hasConeRadius2)
+                        }
+                        if(!hasConeRadius2){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_2_MISSING);
                             throw "cone <radius_2> is missing";
-                        if(!hasConeSurfaceSize)
+                        }
+                        if(!hasConeSurfaceSize){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_MISSING);
                             throw "cone <surface_size> is missing";
+                        }
 //                        // Get words from line into issLine and word
 //                        issLine.str("");            // Empty issLine
 //                        issLine.clear();            // Clear stream's error state
@@ -1097,8 +1228,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         dynamicViscosity = std::stod(word, nullptr);
 //                        hasDynamicViscosity = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_EMPTY);
                         throw "<dynamic_viscosity> is empty";
+                    }
                 }
 
                 // Check static_temperature
@@ -1106,8 +1239,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         staticTemperature = std::stod(word, nullptr);
                         hasStaticTemperature = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STATIC_TEMPERATURE_EMPTY);
                         throw "<static_temperature> is empty";
+                    }
                 }
 
                 // Check reference_pressure
@@ -1115,8 +1250,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         referencePressure = std::stod(word, nullptr);
                         hasReferencePressure = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_PRESSURE_EMPTY);
                         throw "<reference_pressure> is empty";
+                    }
                 }
 
                 // Check reference_velocity
@@ -1124,8 +1261,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         referenceVelocity = std::stod(word, nullptr);
                         hasReferenceVelocity = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_VELOCITY_EMPTY);
                         throw "<reference_velocity> is empty";
+                    }
                 }
 
                 // Check reference_density
@@ -1133,8 +1272,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         referenceDensity = std::stod(word, nullptr);
                         hasReferenceDensity = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_DENSITY_EMPTY);
                         throw "<reference_density> is empty";
+                    }
                 }
 
                 // Check mach_number
@@ -1142,8 +1283,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         machNumber = std::stod(word, nullptr);
                         hasMachNumber = true;
-                    } else
-                        throw "<mach_number> is missing";
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MACH_NUMBER_EMPTY);
+                        throw "<mach_number> is empty";
+                    }
                 }
 
                 // Check flow_direction_X
@@ -1151,8 +1294,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         flowDirectionX = std::stod(word, nullptr);
                         hasFlowDirectionX = true;
-                    } else
-                        throw "<flow_direction_X> is missing";
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_X_EMPTY);
+                        throw "<flow_direction_X> is empty";
+                    }
                 }
 
                 // Check flow_direction_Y
@@ -1160,8 +1305,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         flowDirectionY = std::stod(word, nullptr);
                         hasFlowDirectionY = true;
-                    } else
-                        throw "<flow_direction_Y> is missing";
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Y_EMPTY);
+                        throw "<flow_direction_Y> is empty";
+                    }
                 }
 
                 // Check flow_direction_Z
@@ -1169,8 +1316,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         flowDirectionZ = std::stod(word, nullptr);
                         hasFlowDirectionZ = true;
-                    } else
-                        throw "<flow_direction_Z> is missing";
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Z_EMPTY);
+                        throw "<flow_direction_Z> is empty";
+                    }
                 }
 
                 // Check #END_PHYSICS_MODEL
@@ -1192,22 +1341,38 @@ void StarJob::loadStarJob() {
                         hasBeginPhysicsModel = false;
                     } else{
                         // Missing data
-                        if(!hasStaticTemperature)
+                        if(!hasStaticTemperature){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STATIC_TEMPERATURE_MISSING);
                             throw "<static_temperature> is missing";
-                        if(!hasReferencePressure)
+                        }
+                        if(!hasReferencePressure){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_PRESSURE_MISSING);
                             throw "<reference_pressure> is missing";
-                        if(!hasReferenceVelocity)
+                        }
+                        if(!hasReferenceVelocity){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_VELOCITY_MISSING);
                             throw "<reference_velocity> is missing";
-                        if(!hasReferenceDensity)
+                        }
+                        if(!hasReferenceDensity){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_DENSITY_MISSING);
                             throw "<reference_density> is missing";
-                        if(!hasMachNumber)
+                        }
+                        if(!hasMachNumber){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MACH_NUMBER_MISSING);
                             throw "<mach_number> is missing";
-                        if(!hasFlowDirectionX)
+                        }
+                        if(!hasFlowDirectionX){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_X_MISSING);
                             throw "<flow_direction_X> is missing";
-                        if(!hasFlowDirectionY)
+                        }
+                        if(!hasFlowDirectionY){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Y_MISSING);
                             throw "<flow_direction_Y> is missing";
-                        if(!hasFlowDirectionZ)
+                        }
+                        if(!hasFlowDirectionZ){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Z_MISSING);
                             throw "<flow_direction_Z> is missing";
+                        }
                     }
                 }
             }
@@ -1231,8 +1396,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         CFL = std::stod(word, nullptr);
                         hasCFL = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SOLVER_OPTIONS_CFL_EMPTY);
                         throw "<CFL> is empty";
+                    }
                 }
 
                 if(hasBeginSolverOptions && (word == "#END_SOLVER_OPTIONS")){
@@ -1248,6 +1415,7 @@ void StarJob::loadStarJob() {
                         customSolverOptions = true;
                     } else {
                         // Missing data
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SOLVER_OPTIONS_CFL_MISSING);
                         throw "<CFL> is missing";
                     }
                 }
@@ -1272,8 +1440,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         maxSteps = std::stoi(word, nullptr);
                         hasMaxSteps = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MAX_STEPS_EMPTY);
                         throw "<max_steps> is empty";
+                    }
                 }
 
                 // Check num_samples
@@ -1281,8 +1451,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         numSamples = std::stoi(word, nullptr);
                         hasSamples = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_SAMPLES_EMPTY);
                         throw "<num_samples> is empty";
+                    }
                 }
 
                 // Check asymptotic_CL
@@ -1290,8 +1462,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         asymptoticCL = std::stod(word, nullptr);
                         hasAsymptotycCL = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CL_EMPTY);
                         throw "<asymptotic_CL> is empty";
+                    }
                 }
 
                 // Check asymptotic_CL
@@ -1299,8 +1473,10 @@ void StarJob::loadStarJob() {
                     if(issLine >> word){
                         asymptoticCD = std::stod(word, nullptr);
                         hasAsymptotycCD = true;
-                    } else
+                    } else {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CD_EMPTY);
                         throw "<asymptotic_CD> is empty";
+                    }
                 }
 
                 // Check #END_STOPPING_CRITERIA tag
@@ -1308,7 +1484,8 @@ void StarJob::loadStarJob() {
                     // Check if stopping criteria data is complete
                     if(hasMaxSteps &&
                             // If has samples, it must have criteria for CL and/or CD
-                            ((hasSamples && (hasAsymptotycCL || hasAsymptotycCD)) || !hasSamples)){
+                            ((hasSamples && (hasAsymptotycCL || hasAsymptotycCD)) ||
+                             !hasSamples && (!hasAsymptotycCL && !hasAsymptotycCD))){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Stopping criteria"
                                                        << std::right << std::setw(mediumColumn) << ".";
                         colorText("Loaded\n", GREEN);
@@ -1316,10 +1493,18 @@ void StarJob::loadStarJob() {
                         stoppingCriteria = true;
                         hasBeginStoppingCriteria = false;
                     } else {
-                        if(!hasMaxSteps)
+                        if(!hasMaxSteps){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MAX_STEPS_MISSING);
                             throw "<max_steps> is missing";
-                        if((hasSamples && (!hasAsymptotycCL || !hasAsymptotycCD)))
+                        }
+                        if((hasSamples && (!hasAsymptotycCL || !hasAsymptotycCD))){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CL_OR_CD_MISSING);
                             throw "<asymptotic_CL> or <asymptotic_CD> is missing";
+                        }
+                        if((!hasSamples && (hasAsymptotycCL || hasAsymptotycCD))){
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_SAMPLES_MISSING);
+                            throw "<num_samples> is missing";
+                        }
                     }
                 }
             }
@@ -1337,18 +1522,28 @@ void StarJob::loadStarJob() {
         std::cout << "WARNING: <star_jobData> is missing #END_STAR_JOB tag" << std::endl;
 
     // Check that all mandatory section have been loaded
-    if(!jobSetup)
-        throw "job setup is missing";
-    if(!regions)
-        throw "regions section is missing";
-    if(!meshModel && !hasInitialization)
+    if(!jobSetup){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_JOB_SETUP_MISSING);
+        throw "job setup is missing";}
+    if(!regions){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REGIONS_SECTION_MISSING);
+        throw "regions section is missing";}
+    if(!meshModel && !hasInitialization){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MESH_MODEL_MISSING);
         throw "mesh model is missing";
-    if(volumetricControls && !meshModel)
+    }
+    if(volumetricControls && !meshModel){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MESH_MODEL_MISSING);
         throw "mesh model is missing";
-    if(!physicsModel)
+    }
+    if(!physicsModel){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PHYSICAL_MODEL_MISSING);
         throw "physics model is missing";
-    if(!stoppingCriteria)
+    }
+    if(!stoppingCriteria){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STOPPING_CRITERIA_MISSING);
         throw "stopping criteria is missing";
+    }
 
     // Check newMesh
     if(hasInitialization && !meshModel && !volumetricControls)
@@ -1356,8 +1551,10 @@ void StarJob::loadStarJob() {
 
     if(newMesh && meshModel){
         // CHECK REGION NAME AND SURFACE NAME ARE THE SAME
-        if(regionName != surfaceName)
+        if(regionName != surfaceName){
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REGION_SURFACE_NAMES_MISMATCH);
             throw "region names and surface names are not the same";
+        }
     }
 }
 
