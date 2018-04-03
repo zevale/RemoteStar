@@ -25,7 +25,8 @@ std::vector<std::string> MeshValues::meshValuesCode(){
             "        Simulation activeSimulation = getActiveSimulation();",
             "",
             "        // Data",
-            "        double valueBaseSize                = " + javaScientific(baseSize) + ";"
+            "        double valueBaseSize                 = " + javaScientific(baseSize) + ";",
+            "        double valueMinimumTargetSurfaceSize = " + javaScientific(Default::minimumTargetSurfaceSize) + ";",
     };
 
 
@@ -34,12 +35,12 @@ std::vector<std::string> MeshValues::meshValuesCode(){
         codeBuffer = {
                 "",
                 "        // Prism layer",
-                "        double valueBoundaryMarchAngle      = " + javaScientific(prismLayer.boundaryMarchAngle) + ";",
-                "        double valueMinimumThickness        = " + javaScientific(prismLayer.minimumThickness) + ";",
-                "        double valueLayerChoppingPercentage = " + javaScientific(prismLayer.layerChoppingPercentage) + ";",
-                "        int    valueNumPrismLayers          = " + std::to_string(prismLayer.numPrismLayers) + ";",
-                "        double valuePrismLayerThickness     = " + javaScientific(prismLayer.prismLayerThickness) + ";",
-                "        double valueNearWallThickness       = " + javaScientific(prismLayer.nearWallThickness) + ";"
+                "        double valueBoundaryMarchAngle       = " + javaScientific(prismLayer.boundaryMarchAngle) + ";",
+                "        double valueMinimumThickness         = " + javaScientific(prismLayer.minimumThickness) + ";",
+                "        double valueLayerChoppingPercentage  = " + javaScientific(prismLayer.layerChoppingPercentage) + ";",
+                "        int    valueNumPrismLayers           = " + std::to_string(prismLayer.numPrismLayers) + ";",
+                "        double valuePrismLayerThickness      = " + javaScientific(prismLayer.prismLayerThickness) + ";",
+                "        double valueNearWallThickness        = " + javaScientific(prismLayer.nearWallThickness) + ";"
         };
         code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
     }
@@ -70,6 +71,16 @@ std::vector<std::string> MeshValues::meshValuesCode(){
             "",
             "        // Get the mesh continuum object",
             "        MeshContinuum meshContinuumObj = ((MeshContinuum) activeSimulation.getContinuumManager().getContinuum(\"Mesh 1\"));",
+            "",
+            "        // MINIMUM AND TARGET SURFACE SIZE",
+            "        SurfaceSize surfaceSizeObj =  meshContinuumObj.getReferenceValues().get(SurfaceSize.class);",
+            "        surfaceSizeObj.getRelativeOrAbsoluteOption().setSelected(RelativeOrAbsoluteOption.Type.ABSOLUTE);",
+            "        // Minimum surface size",
+            "        AbsoluteMinimumSize absoluteMinimumSurfaceSizeObj = surfaceSizeObj.getAbsoluteMinimumSize();",
+            "        absoluteMinimumSurfaceSizeObj.getValue().setValue(valueMinimumTargetSurfaceSize);",
+            "        // Target surface size",
+            "        AbsoluteTargetSize absoluteTargetSurfaceSizeObj = surfaceSizeObj.getAbsoluteTargetSize();",
+            "        absoluteTargetSurfaceSizeObj.getValue().setValue(valueMinimumTargetSurfaceSize);",
             "",
             "        // Base size",
             "        meshContinuumObj.getReferenceValues().get(BaseSize.class).setValue(valueBaseSize);"

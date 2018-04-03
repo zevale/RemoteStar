@@ -14,6 +14,12 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
     // Get ofstream object to be able to write the macro
     macroFile = openMightyMacroFile();
 
+    // Check if there is initialization
+    hasInitialization = !(currentStarJob->getInitializationJob() == Default::initializationJob);
+
+    // Check if there is the need to mesh
+    newMesh = currentStarJob->getNewMesh();
+
     // Import assignment
     import = Import({Default::boundaryMarchAngle,
                      Default::minimumThickness,
@@ -65,6 +71,32 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                             currentStarJob->getRegionName(),
                             currentStarJob->getBoundaryCondition());
 
+    // Volumetric controls
+    volumetricControls = VolumetricControls({currentStarJob->getBlockX1(),
+                                             currentStarJob->getBlockY1(),
+                                             currentStarJob->getBlockZ1(),
+                                             currentStarJob->getBlockX2(),
+                                             currentStarJob->getBlockY2(),
+                                             currentStarJob->getBlockZ2(),
+                                             currentStarJob->getBlockSurfaceSize()},
+                                            {currentStarJob->getCylinderX1(),
+                                             currentStarJob->getCylinderY1(),
+                                             currentStarJob->getCylinderZ1(),
+                                             currentStarJob->getCylinderX2(),
+                                             currentStarJob->getCylinderY2(),
+                                             currentStarJob->getCylinderZ2(),
+                                             currentStarJob->getCylinderRadius(),
+                                             currentStarJob->getCylinderSurfaceSize()},
+                                            {currentStarJob->getConeX1(),
+                                             currentStarJob->getConeY1(),
+                                             currentStarJob->getConeZ1(),
+                                             currentStarJob->getConeX2(),
+                                             currentStarJob->getConeY2(),
+                                             currentStarJob->getConeZ2(),
+                                             currentStarJob->getConeRadius1(),
+                                             currentStarJob->getConeRadius2(),
+                                             currentStarJob->getConeSurfaceSize()});
+
     // Physics values assignment (mach, viscosity, ref. pressure, static temp., flow direction, velocity components)
     physicsValues = PhysicsValues(currentStarJob->getMachNumber(),
                                   currentStarJob->getDynamicViscosity(),
@@ -104,6 +136,9 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                         // Boundary condition
                                         currentStarJob->getBoundaryCondition());
 
+    // Create scenes assignment
+    mightyScene = MightyScene(currentStarJob->getRegionName());
+
     // Stopping criteria assignment (maxSteps, number of samples for asymptotic convergence, asymptotic convergence)
     stoppingCriteria = StoppingCriteria(currentStarJob->getMaxSteps(),
                                         currentStarJob->getNumSamples(),
@@ -129,6 +164,7 @@ void MightyMacro::writeMacro() {
     beginStarMacro();
     writeExecute();
     writeAutoSave();
+    writeSimCleanup();
     writeAircraft();
     writeDomain();
     writeRegion();
@@ -136,11 +172,13 @@ void MightyMacro::writeMacro() {
     writePhysicsContinuum();
     writeShowDomain();
     writeMeshValues();
+    writeVolumetricControls();
     writePhysicsValues();
     writeSolverOptions();
     writeSolutionMonitors();
     writeStoppingCriteria();
     writeGenerateMesh();
+    writeMightyScene();
     writeRunSimulation();
     writeExportResults();
     writeCloseSim();
@@ -187,29 +225,71 @@ void MightyMacro::endStarMacro() {
 
 void MightyMacro::writeExecute() {
     std::vector<std::string> code;
+    std::vector<std::string> codeBuffer;
 
     // Execute code
     code = {
             "    public void execute(){",
-            "        autoSaveSimulation();",
-            "        importAircraftGeometry();",
-            "        importDomainGeometry();",
-            "        generateAirDomain();",
-            "        generateRegions();",
-            "        meshContinuum();",
-            "        physicsContinuum();",
-            "        showDomain();",
-            "        meshValues();",
+            "        autoSaveSimulation();"
+    };
+
+    if(hasInitialization)
+        code.emplace_back("        simCleanup();");
+
+    if(!hasInitialization){
+        codeBuffer = {
+                "        importAircraftGeometry();",
+                "        importDomainGeometry();",
+                "        generateAirDomain();",
+                "        generateRegions();",
+                "        meshContinuum();",
+                "        physicsContinuum();",
+                "        showDomain();",
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
+    if(newMesh){
+        codeBuffer = {
+                "        meshValues();"
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
+
+    // Check volumetric controls
+    if(!volumetricControls.getBlock().surfaceSize.empty()         ||
+            !volumetricControls.getCylinder().surfaceSize.empty() ||
+            !volumetricControls.getCone().surfaceSize.empty())
+        code.emplace_back("        volumetricControls();");
+
+    // Mandatory
+    codeBuffer = {
             "        physicsValues();",
-            "        solverOptions();",
-            "        solutionMonitors();",
-            "        stoppingCriteria();",
-            "        generateMesh();",
+            "        solverOptions();"
+    };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
+    if(!hasInitialization)
+        code.emplace_back("        solutionMonitors();");
+
+    // Mandatory
+    code.emplace_back("        stoppingCriteria();");
+
+    if(newMesh)
+        code.emplace_back("        generateMesh();");
+
+    if(!hasInitialization)
+        code.emplace_back("        createScenes();");
+
+    // Mandatory
+    codeBuffer = {
             "        runSimulation();",
             "        exportResults();",
             "        closeSimulation();",
             "    }"
     };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
 
     // Write execute code to macro
     writeToFile(code);
@@ -220,14 +300,21 @@ void MightyMacro::writeAutoSave() {
 }
 
 void MightyMacro::writeAircraft() {
-    writeToFile(aircraft.aircraftCode());
+    if(!hasInitialization)
+        writeToFile(aircraft.aircraftCode());
 }
 
 void MightyMacro::writeDomain() {
-    writeToFile(domain.domainCode());
+    if(!hasInitialization)
+        writeToFile(domain.domainCode());
 }
 
 void MightyMacro::writeRegion() {
+
+    // Only run for for new simulations
+    if(hasInitialization)
+        return;
+
     std::vector<std::string> code;
     code = {
             "",
@@ -255,19 +342,32 @@ void MightyMacro::writeRegion() {
 }
 
 void MightyMacro::writeMeshContinuum() {
-    writeToFile(meshContinuum.meshContinuumCode());
+    if(!hasInitialization)
+        writeToFile(meshContinuum.meshContinuumCode());
 }
 
 void MightyMacro::writePhysicsContinuum() {
-    writeToFile(physicsContinuum.physicsContinuumCode());
+    if(!hasInitialization)
+        writeToFile(physicsContinuum.physicsContinuumCode());
 }
 
 void MightyMacro::writeShowDomain() {
-    writeToFile(showDomain.showDomainCode());
+    if(!hasInitialization)
+        writeToFile(showDomain.showDomainCode());
 }
 
 void MightyMacro::writeMeshValues() {
-    writeToFile(meshValues.meshValuesCode());
+    if(newMesh)
+        writeToFile(meshValues.meshValuesCode());
+}
+
+void MightyMacro::writeVolumetricControls() {
+    // Check volumetric control options exist
+    if(!volumetricControls.getBlock().surfaceSize.empty()         ||
+            !volumetricControls.getCylinder().surfaceSize.empty() ||
+            !volumetricControls.getCone().surfaceSize.empty()){
+        writeToFile(volumetricControls.volumetricControlsCode());
+    }
 }
 
 void MightyMacro::writePhysicsValues() {
@@ -279,7 +379,8 @@ void MightyMacro::writeSolverOptions() {
 }
 
 void MightyMacro::writeSolutionMonitors() {
-    writeToFile(solutionMonitors.solutionMonitorsCode());
+    if(!hasInitialization)
+        writeToFile(solutionMonitors.solutionMonitorsCode());
 }
 
 void MightyMacro::writeStoppingCriteria() {
@@ -287,6 +388,11 @@ void MightyMacro::writeStoppingCriteria() {
 }
 
 void MightyMacro::writeGenerateMesh() {
+
+    // No need to run if mesh is the same
+    if(!newMesh)
+        return;
+
     std::vector<std::string> code;
     code = {
             "",
@@ -304,6 +410,11 @@ void MightyMacro::writeGenerateMesh() {
             "    }"
     };
     writeToFile(code);
+}
+
+void MightyMacro::writeMightyScene() {
+    if(!hasInitialization)
+        writeToFile(mightyScene.mightySceneCode());
 }
 
 void MightyMacro::writeRunSimulation() {
@@ -330,4 +441,55 @@ void MightyMacro::writeExportResults() {
 
 void MightyMacro::writeCloseSim() {
     writeToFile(closeSim.closeSimCode());
+}
+
+void MightyMacro::writeSimCleanup() {
+
+    // No need to run for new simulations
+    if(!hasInitialization)
+        return;
+
+    std::vector<std::string> code;
+    std::vector<std::string> codeBuffer;
+
+    code = {
+            "",
+            "    private void simCleanup(){",
+            "        Simulation activeSimulation = getActiveSimulation();"
+    };
+
+    // Delete mesh scene (in case of new mesh)
+    if(newMesh){
+        codeBuffer = {
+                "",
+                "        // Delete mesh scene",
+                "        Scene sceneOldMesh = activeSimulation.getSceneManager().getScene(\"Mesh Scene 1\");",
+                "        activeSimulation.getSceneManager().deleteScenes(new NeoObjectVector(new Object[] {sceneOldMesh}));"
+        };
+        code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+    }
+
+    // Delete table and user filed functions
+    codeBuffer = {
+            "",
+            "        // Delete force table",
+            "        XyzInternalTable xyzInternalTableOldForceTable = ((XyzInternalTable) activeSimulation.getTableManager().getTable(\"Force Table\"));",
+            "        activeSimulation.getTableManager().remove(xyzInternalTableOldForceTable);",
+            "",
+            "        // Delete field function: force sum",
+            "        UserFieldFunction userFieldFunctionOldForceSum = ((UserFieldFunction) activeSimulation.getFieldFunctionManager().getFunction(\"ForceSum\"));",
+            "        activeSimulation.getFieldFunctionManager().removeObjects(userFieldFunctionOldForceSum);",
+            "",
+            "        // Delete field function: force pressure",
+            "        UserFieldFunction userFieldFunctionOldForcePressure = ((UserFieldFunction) activeSimulation.getFieldFunctionManager().getFunction(\"ForcePressure\"));",
+            "        activeSimulation.getFieldFunctionManager().removeObjects(userFieldFunctionOldForcePressure);",
+            "",
+            "        // Delete field function: force friction",
+            "        UserFieldFunction userFieldFunctionOldForceFriction = ((UserFieldFunction) activeSimulation.getFieldFunctionManager().getFunction(\"ForceFriction\"));",
+            "        activeSimulation.getFieldFunctionManager().removeObjects(userFieldFunctionOldForceFriction);",
+            "    }"
+    };
+    code.insert(code.end(), codeBuffer.begin(), codeBuffer.end());
+
+    writeToFile(code);
 }

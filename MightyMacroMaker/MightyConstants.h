@@ -10,13 +10,15 @@ namespace Math {
 
 namespace Default{
     // ---------- GENERIC
-    const char* const filePath      ("empty_path");
-    constexpr     int scalar        (32);
-    constexpr    bool boolean       (false);
+    const char* const filePath          ("empty_path");
+    const char* const initializationJob ("empty_job");
+    constexpr    bool newMesh           (true);
+    constexpr    bool newPhysics        (true);
+    constexpr     int scalar            (32);
+    constexpr    bool boolean           (false);
 
     // ---------- PAUSE
     constexpr int pauseTime = 3000; // Milliseconds
-
 
     // ---------- AUTO SAVE
     constexpr int  numAutosaveFiles   (0);
@@ -24,16 +26,22 @@ namespace Default{
     constexpr bool autoSaveMesh       (true);
     constexpr bool autoSaveSimulation (true);
 
+    // ---------- SURFACE SIZE
+    constexpr double minimumTargetSurfaceSize (0.001); // [m]
+
     // ---------- PRISM LAYER MESH (STANDARD CONFIG AS PER SIEMENS RECOMMENDATIONS)
     constexpr double  boundaryMarchAngle      (85);
     constexpr double  minimumThickness        (5);
     constexpr double  layerChoppingPercentage (10);
 
-    // ---------- PHYSICS VALUES
-    constexpr double dynamicViscosity (-1e3); // Negative means field is missing (inviscid)
-
     // ---------- NO PRISM LAYER BY DEFAULT
     constexpr int zeroLayers(0);
+
+    // ---------- VOLUMETRIC CONTROLS
+    constexpr double surfaceSize (-1e-3); // Negative means no volumetric control
+
+    // ---------- PHYSICS VALUES
+    constexpr double dynamicViscosity (-1e3); // Negative means field is missing (inviscid)
 
     // ---------- SOLUTION MONITORS
 

@@ -1,4 +1,5 @@
 #include "star_client.h"
+#include "exit_codes.h"
 #include "MightyMacroMaker/MightyConstants.h"
 
 #include <iostream>
@@ -41,7 +42,7 @@ void errorInterpreted(const std::string& _errorMessage) {
 // Print error message to std::cerr and exit
 void exitNow(const std::string& _errorMessage) {
     colorText(_errorMessage, RED);
-    exit(EXIT_FAILURE);
+    exit(g_exitStatus);
 }
 
 // Change current directory
@@ -405,7 +406,7 @@ int initializeSSH(SSH& _sshConnection) {
         _sshConnection.loadSSH();
     } catch (const char* loadSshException) {
         // Error loading ssh server data from <star_sshServer>
-        colorText("\nERROR: " + std::string(loadSshException) + "\n", RED);
+        colorText("\n     ERROR: " + std::string(loadSshException) + "\n", RED);
 //        std::cerr << "\nERROR: " << loadSshException << std::endl;
         return FALSE;
     }
@@ -435,18 +436,27 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
                                       std::string(CrossPlatform::separator) + "star_runScript"), std::ios_base::binary);
 
         // Check if file is open
-        if(!shellRunScriptFile)
+        if(!shellRunScriptFile){
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_SHELL_SCRIPT_CANNOT_WRITE);
             throw "Cannot write shell script <star_runScript>";
+        }
 
         // Initialize sheBang and STAR CCM+ command line arguments
         std::string sheBang = "#!/bin/sh\n";
         std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
         std::string starLicense = "-power ";
-        std::string starExit = "";
+//        std::string starExit = "";
         std::string starInfiniBand = "-fabric IBV ";
         std::string starHost;
         std::string starMacro = " -batch ";
         std::string macroPath = _starJob.getServerJobDirectory("resources/MightyMacro.java");
+        std::string initializationJobPath = (_starJob.getInitializationJob() == Default::initializationJob)?
+                                            // No initialization file
+                                            "" :
+                                            // Open initialization file in original folder
+                                            " " + _starJob.getServerDirectory() +
+                                                    _starJob.getInitializationJob() + "/" +
+                                                    _starJob.getInitializationJob() + ".sim";
 
         // Generate host list
         int nHosts = _starHost.getNumHosts();
@@ -469,12 +479,12 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         }
         // Output to file and close
         shellRunScriptFile.write(sheBang.c_str(), sheBang.size());
-        std::string runCommand(starPath + starLicense + starExit + starHost + starMacro + macroPath);
+        std::string runCommand(starPath + starLicense + starHost + starMacro + macroPath + initializationJobPath);
         shellRunScriptFile.write(runCommand.c_str(), runCommand.size());
         shellRunScriptFile.close();
     } catch (const char* loadHostException) {
         // Error loading hosts from <star_hostList>
-        colorText("\nERROR: " + std::string(loadHostException) + "\n", RED);
+        colorText("\n      ERROR: " + std::string(loadHostException) + "\n", RED);
 //        std::cerr << "\nERROR: " << loadHostException << std::endl;
         return FALSE;
     }
@@ -501,20 +511,28 @@ int initializeStarJob(StarJob& _starJob) {
         // Load job
         _starJob.loadStarJob();
 
-        // Check aircraft geometry
-        std::string test = _starJob.getClientJobDirectory("resources" + std::string(CrossPlatform::separator)
-                                                          + "SurfMesh.stl");
-        if(!fileExists(test))
-            throw "Aircraft geometry not found";
+        // If there is no initialization, check files in "resources" folder
+        if(_starJob.getInitializationJob() == Default::initializationJob){
+            // Check aircraft geometry
+            std::string test = _starJob.getClientJobDirectory("resources" + std::string(CrossPlatform::separator)
+                                                              + "SurfMesh.stl");
+            if(!fileExists(test)){
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_AIRCRAFT_GEOMETRY_NOT_FOUND);
+                throw "Aircraft geometry not found";
+            }
 
-        // Check domain geometry
-        if(!fileExists(_starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)
-                                                      + "DomainGeometry.x_b")))
-            throw "Domain geometry not found";
+            // Check domain geometry
+            test = _starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)
+                                                  + "DomainGeometry.x_b");
+            if(!fileExists(test)){
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_DOMAIN_GEOMETRY_NOT_FOUND);
+                throw "Domain geometry not found";
+            }
+        }
 
     } catch(const char * loadJobException) {
         // Error loading hosts from <star_hostList>
-        colorText("\nERROR: " + std::string(loadJobException) + "\n", RED);
+        colorText("\n      ERROR: " + std::string(loadJobException) + "\n", RED);
 //        std::cerr << "ERROR: " << loadJobException << std::endl;
         return FALSE;
     }
@@ -559,7 +577,7 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
 }
 
 /*
- * initializeStarHost()
+ * fetchResults()
  *
  * DESCRIPTION
  * Gets the results from the server
@@ -576,14 +594,16 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
     system("clear");
 #endif
 
+    bool forcesFetched = true;
+    bool simFetched    = true;
     // Forces.csv
-    bool filesFetched = true;
     secureCopy(_sshConnection, _starJob.getServerJobDirectory("Forces.csv"),
                _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
     if(!fileExists(_starJob.getClientJobDirectory("Forces.csv"))){
-        colorText("ERROR: Unable to fetch Forces.csv from server!", RED);
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_FORCES_UNABLE_TO_FETCH);
+        colorText("      ERROR: Unable to fetch Forces.csv from server!", RED);
 //        std::cerr << "ERROR: Unable to fetch Forces.csv from server!" << std::endl;
-        filesFetched = false;
+        forcesFetched = false;
     }
 
     // Sim File
@@ -591,20 +611,24 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
         secureCopy(_sshConnection, _starJob.getServerJobDirectory(_starJob.getJobName() + ".sim"),
                    _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
         if (!fileExists(_starJob.getClientJobDirectory(_starJob.getJobName() + ".sim"))){
-            colorText("ERROR: Unable to fetch Sim File from server", RED);
+            colorText("      ERROR: Unable to fetch sim File from server", RED);
 //            std::cerr << "ERROR: Unable to fetch Sim File from server" << std::endl;
-            filesFetched = false;
+            simFetched = false;
+            if(forcesFetched && !simFetched)
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_SIM_UNABLE_TO_FETCH);
+            else if(!forcesFetched && !simFetched)
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_FORCES_SIM_UNABLE_TO_FETCH);
         }
     }
 
     // Clean server only if files have been correctly fetched
-    if(_starJob.getCleanServer() && filesFetched){
+    if(_starJob.getCleanServer() && forcesFetched && simFetched){
         secureShell(_sshConnection, "rm -r " + _starJob.getServerJobDirectory());
         colorText("\nNOTE: job folder deleted from server\n\n", YELLOW);
 //        std::cerr << "\nNOTE: job folder deleted from server" << std::endl;
     }
 
-    return (filesFetched? TRUE : FALSE);
+    return ((forcesFetched && simFetched)? TRUE : FALSE);
 }
 
 /*
@@ -629,13 +653,16 @@ void colorText(const std::string& _text, Color _color){
 
     switch(_color){
         case RED:
-            consoleAttribute = 12 + 0*0xF;
+            consoleAttribute = 0xC + 0*0xF;
             break;
         case GREEN:
-            consoleAttribute = 2 + 0*0xF;
+            consoleAttribute = 0x2 + 0*0xF;
             break;
         case BLUE:
-            consoleAttribute = 9 + 0*0xF;
+            consoleAttribute = 0x9 + 0*0xF;
+            break;
+        case AQUA:
+            consoleAttribute = 0x3 + 0*0xF;
             break;
         case YELLOW:
             consoleAttribute = 0xE + 0*0xF;
@@ -672,6 +699,10 @@ void colorText(const std::string& _text, Color _color){
             break;
         case BLUE:
             escapeSequence = { 0x1b, '[', '3', '4' , ';', '4', '0', 'm', 0 };
+            break;
+        case AQUA:
+            escapeSequence = { 0x1b, '[', '9', '6' , ';', '4', '0', 'm', 0 };
+            break;
         case YELLOW:
             escapeSequence = { 0x1b, '[', '9', '3' , ';', '4', '0', 'm', 0 };
             break;

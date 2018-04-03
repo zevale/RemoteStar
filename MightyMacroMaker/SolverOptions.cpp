@@ -19,7 +19,6 @@ std::vector<std::string> SolverOptions::solverOptionsCode() {
             "        // Set expert initialization - grid sequencing",
             "        coupledImplicitSolverObj.getExpertInitManager().getExpertInitOption().setSelected(ExpertInitOption.Type.GRID_SEQ_METHOD);",
             "        // Set expert driver",
-            "        // Set expert driver",
             "        coupledImplicitSolverObj.getSolutionDriverManager().getExpertDriverOption().setSelected(ExpertDriverOption.Type.EXPERT_DRIVER);",
             "",
             "        // Courant Number",

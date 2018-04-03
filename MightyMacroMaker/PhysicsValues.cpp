@@ -115,6 +115,7 @@ std::vector<std::string> PhysicsValues::physicsValuesCode() {
                     "        flowDirectionProfile"  + regionName[i] + ".getMethod(ConstantVectorProfileMethod.class).getQuantity().setComponents(valueDirectionX, valueDirectionY, valueDirectionZ);",
                     "        // Mach number",
                     "        MachNumberProfile machNumberProfile"  + regionName[i] + " = boundary"  + regionName[i] + ".getValues().get(MachNumberProfile.class);",
+                    "        machNumberProfile" + regionName[i] + ".getMethod(ConstantScalarProfileMethod.class).getQuantity().setValue(" + std::to_string(machNumber) + ");",
                     "        // Static temperature",
                     "        StaticTemperatureProfile staticTemperatureProfile" + regionName[i] + " = boundary"  + regionName[i] + ".getValues().get(StaticTemperatureProfile.class);",
                     "        staticTemperatureProfile"  + regionName[i] + ".getMethod(ConstantScalarProfileMethod.class).getQuantity().setValue(valueStaticTemperature);"
@@ -123,6 +124,13 @@ std::vector<std::string> PhysicsValues::physicsValuesCode() {
         }
     }
     code.emplace_back("    }");
+
+    // Create mach number scene
+    codeBuffer = {
+            "",
+            "        // MACH NUMBER SCENE",
+            "",
+    };
 
     return code;
 }
