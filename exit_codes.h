@@ -30,7 +30,7 @@ enum class ExitCodes {
     FAILURE_JOB_FILE_AUTO_SAVE_FILES_MISSING           , // Job file: <auto_save_files> is missing
     FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_INPUT        , // Job file: invalid argument for <auto_save_iterations> (int >= 1)
     FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_EMPTY        , // Job file: <auto_save_iterations> is empty
-    FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_MISSING      , // Job file: <auto_save_iterations> is empty
+    FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_MISSING      , // Job file: <auto_save_iterations> is missing
     FAILURE_JOB_FILE_WALL_REGION_MISSING_NAME          , // Job file: wall region is missing name
     FAILURE_JOB_FILE_WALL_REGION_MISSING               , // Job file: wall region is missing
     FAILURE_JOB_FILE_FREE_STREAM_REGION_MISSING_NAME   , // Job file: free stream region is missing name
@@ -141,9 +141,9 @@ enum class ExitCodes {
     FAILURE_JOB_FILE_ASYMPTOTIC_CL_OR_CD_MISSING       , // Job file: <asymptotic_CL> or <asymptotic_CD> is missing
     FAILURE_JOB_FILE_JOB_SETUP_MISSING                 , // Job file: job setup is missing
     FAILURE_JOB_FILE_REGIONS_SECTION_MISSING           , // Job file: regions section is missing
-    FAILURE_JOB_FILE_MESH_MODEL_MISSING                , // Job file: regions section is missing
-    FAILURE_JOB_FILE_PHYSICAL_MODEL_MISSING            , // Job file: regions section is missing
-    FAILURE_JOB_FILE_STOPPING_CRITERIA_MISSING         , // Job file: regions section is missing
+    FAILURE_JOB_FILE_MESH_MODEL_MISSING                , // Job file: mesh model is missing
+    FAILURE_JOB_FILE_PHYSICAL_MODEL_MISSING            , // Job file: Job file: physical is missing
+    FAILURE_JOB_FILE_STOPPING_CRITERIA_MISSING         , // Job file: stopping criteria is missing
     FAILURE_JOB_FILE_REGION_SURFACE_NAMES_MISMATCH     , // Job file: region names and surface names are not the same
     FAILURE_AIRCRAFT_GEOMETRY_NOT_FOUND                , // Resources: aircraft geometry not found
     FAILURE_DOMAIN_GEOMETRY_NOT_FOUND                  , // Resources: domain geometry not found
