@@ -76,8 +76,28 @@ void StarHost::loadHostList() {
     while(hostListFile >> word) {
         // Check new host
         if(word == "#HOST"){
+            // First host is always added
+            if(countHosts == 0)
+                ++countHosts;
+            // Check previous host data (8 fields but countHostWord is 9 after the while)
+            else if(countHostWord == 9)
+                ++countHosts;
+            else if(countHostWord == 1 || countHostWord == 2){
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_ALIAS_MISSING);
+                throw "Missing alias in file <star_hostList>";
+            } else if(countHostWord == 3 || countHostWord == 4) {
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_ADDRESS_MISSING);
+                throw "Missing address in file <star_hostList>";
+            } else if(countHostWord == 5 || countHostWord == 6) {
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_TYPE_MISSING);
+                throw "Missing type in file <star_hostList>";
+            } else if(countHostWord == 7 || countHostWord == 8) {
+                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_PROCESSES_MISSING);
+                throw "Missing processes in file <star_hostList>";
+            }
+
+            // Reset host words
             countHostWord = 0;
-            ++countHosts;
         }
         // Check that at least one host tag has been found
         if(countHosts > 0) {
@@ -85,56 +105,100 @@ void StarHost::loadHostList() {
                 case 0:
                     break;
                 case 1:
-                    if(word != "alias")
+                    if(word != "alias"){
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_ALIAS_MISSING);
                         throw "Missing alias in file <star_hostList>";
+                    }
                     break;
                 case 2:
                     alias.insert(alias.end(), word);
                     break;
                 case 3:
-                    if(word != "address")
+                    if(word != "address") {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_ADDRESS_MISSING);
                         throw "Missing address in file <star_hostList>";
+                    }
                     break;
                 case 4:
                     address.insert(address.end(), word);
                     break;
                 case 5:
-                    if(word != "type")
+                    if(word != "type"){
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_TYPE_MISSING);
                         throw "Missing type in file <star_hostList>";
+                    }
                     break;
                 case 6:
                     if(word == "localhost"){
                         if(numLocalhost == 0){
                             hostType.insert(hostType.end(), LOCALHOST);
                             ++numLocalhost;
-                        } else
-                            throw "There is more than one localhost in file <star_hostList>";
+                        } else {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_LOCALHOST_NOT_UNIQUE);
+                            throw "there is more than one localhost in file <star_hostList>";
+                        }
                     } else if (word == "remote"){
                         hostType.insert(hostType.end(), REMOTE_HOST);
                     } else {
-                        throw "Missing or wrong host type in file <star_hostList>";
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_TYPE_MISSING_USAGE);
+                        throw "host type in file <star_hostList> must be localhost or remote";
                     }
                     break;
                 case 7:
-                    if(word != "processes")
+                    if(word != "processes"){
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_PROCESSES_MISSING);
                         throw "Missing processes in file <star_hostList>";
+                    }
                     break;
                 case 8:
-                    processes.insert(processes.end(), std::stoi(word));
+                    // Check stoi validity
+                    try {
+                        processes.insert(processes.end(), std::stoi(word));
+
+                        // If stoi successful, processes >= 1
+                        if (processes[processes.size()-1] < 1) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_PROCESSES_INPUT);
+                            throw "invalid argument for processes in file <star_hostList> (int >= 1)";
+                        }
+                    } catch (const std::invalid_argument &invalidArgument) {
+                        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_PROCESSES_INPUT);
+                        throw "invalid argument for processes in file <star_hostList> (int >= 1)";
+                    }
                     break;
                 default:
+                    g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_USAGE);
                     throw "Wrong syntax in file <star_hostList>";
             }
         }
         ++countHostWord;
     }
-    // Check data (8 fields but countHostWord is 9 after the while)
-    if(countHostWord != 9)
-        throw "Wrong syntax in <star_hostList>";
 
-    // Check for at least one localhost
-    if(!numLocalhost)
-        throw "No localhost in file <star_hostList>";
+    // Check for hosts
+    if(countHosts == 0){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_NO_HOST);
+        throw "missing host in file <star_hostList>";
+    }
+
+    // Check one localhost
+    if(numLocalhost == 0){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_NO_LOCALHOST);
+        throw "no localhost in file <star_hostList>";
+    }
+
+    // Check last host data (8 fields but countHostWord is 9 after the while)
+    if(countHostWord == 1 || countHostWord == 2){
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_ALIAS_MISSING);
+        throw "Missing alias in file <star_hostList>";
+    } else if(countHostWord == 3 || countHostWord == 4) {
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_ADDRESS_MISSING);
+        throw "Missing address in file <star_hostList>";
+    } else if(countHostWord == 5 || countHostWord == 6) {
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_TYPE_MISSING);
+        throw "Missing type in file <star_hostList>";
+    } else if(countHostWord == 7 || countHostWord == 8) {
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_PROCESSES_MISSING);
+        throw "Missing processes in file <star_hostList>";
+    }
 
     // Final check
     if(hostListFile.bad())

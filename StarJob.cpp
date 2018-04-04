@@ -296,6 +296,9 @@ StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
         // Physics values defaults
         dynamicViscosity(Default::dynamicViscosity),
 
+        // Solver options
+        customSolverOptions(Default::deactivated),
+
         // Stopping criteria defaults
         numSamples  (Default::numSamples),
         asymptoticCL(Default::asymptoticCL),
@@ -552,8 +555,19 @@ void StarJob::loadStarJob() {
                 // Check auto_save_files
                 if(hasBeginJobSetup && (word == "auto_save_files")){
                     if(issLine >> word){
-                        numAutoSaveFiles = std::stoi(word, nullptr);
-                        hasAutoSaveFiles = true;
+                        try {
+                            numAutoSaveFiles = std::stoi(word, nullptr);
+                            // Check it is positive
+                            if(numAutoSaveFiles < 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_FILES_INPUT);
+                                throw "invalid argument for <auto_save_files> (int >= 0)";
+                            }
+                            // Successful
+                            hasAutoSaveFiles = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_FILES_INPUT);
+                            throw "invalid argument for <auto_save_files> (int >= 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_FILES_EMPTY);
                         throw "<auto_save_files> is empty";
@@ -563,8 +577,19 @@ void StarJob::loadStarJob() {
                 // Check auto_save_iterations
                 if(hasBeginJobSetup && (word == "auto_save_iterations")){
                     if(issLine >> word){
-                        iterationInterval = std::stoi(word, nullptr);
-                        hasAutoSaveIterations = true;
+                        try {
+                            iterationInterval = std::stoi(word, nullptr);
+                            // Check it is >= 1
+                            if(iterationInterval < 1){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_INPUT);
+                                throw "invalid argument for <auto_save_iterations> (int >= 1)";
+                            }
+                            // Successful
+                            hasAutoSaveIterations = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_INPUT);
+                            throw "invalid argument for <auto_save_iterations> (int >= 1)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_EMPTY);
                         throw "<auto_save_iterations> is empty";
@@ -707,8 +732,19 @@ void StarJob::loadStarJob() {
                 // Check base_size
                 if(hasBeginMeshModel && (word == "base_size")){
                     if(issLine >> word){
-                        baseSize = std::stod(word, nullptr);
-                        hasBaseSize = true;
+                        try {
+                            baseSize = std::stod(word, nullptr);
+                            // Check data
+                            if(baseSize <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BASE_SIZE_INPUT);
+                                throw "invalid argument for <base_size> (double > 0)";
+                            }
+                            // Successful
+                            hasBaseSize = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BASE_SIZE_INPUT);
+                            throw "invalid argument for <base_size> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BASE_SIZE_EMPTY);
                         throw "<base_size> is empty";
@@ -718,15 +754,20 @@ void StarJob::loadStarJob() {
                 // Check num_prism_layers
                 if(hasBeginMeshModel && (word == "num_prism_layers")){
                     if(issLine >> word){
-                        prismLayers = std::stoi(word, nullptr);
-
-                        // Check data
-                        if(prismLayers < 1){
-                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_PRISM_LAYER_INVALID);
-                            throw "<num_prism_layers> >= 1";
+                        try {
+                            prismLayers = std::stoi(word, nullptr);
+                            // Check data
+                            // Check data
+                            if(prismLayers < 1){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_PRISM_LAYER_INPUT);
+                                throw "invalid argument for <num_prism_layers> (int >= 1)";
+                            }
+                            // Successful
+                            hasPrismLayers = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_PRISM_LAYER_INPUT);
+                            throw "invalid argument for <num_prism_layers> (int >= 1)";
                         }
-
-                        hasPrismLayers = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_EMPTY);
                         throw "<num_prism_layers> is empty";
@@ -736,8 +777,19 @@ void StarJob::loadStarJob() {
                 // Check prism_layer_thickness
                 if(hasBeginMeshModel && (word == "prism_layer_thickness")){
                     if(issLine >> word){
-                        prismLayerThickness = std::stod(word, nullptr);
-                        hasPrismLayerThickness = true;
+                        try {
+                            prismLayerThickness = std::stod(word, nullptr);
+                            // Check data
+                            if(prismLayerThickness <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_THICKNESS_INPUT);
+                                throw "invalid argument invalid argument for <prism_layer_thickness> (double > 0)";
+                            }
+                            // Successful
+                            hasPrismLayerThickness = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_THICKNESS_INPUT);
+                            throw "invalid argument invalid argument for <prism_layer_thickness> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_THICKNESS_EMPTY);
                         throw "<prism_layer_thickness> is empty";
@@ -747,8 +799,19 @@ void StarJob::loadStarJob() {
                 // Check near_wall_thickness
                 if(hasBeginMeshModel && (word == "near_wall_thickness")){
                     if(issLine >> word){
-                        nearWallThickness = std::stod(word, nullptr);
-                        hasNearWallThickness = true;
+                        try {
+                            nearWallThickness = std::stod(word, nullptr);
+                            // Check data
+                            if(nearWallThickness <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NEAR_WALL_THICKNESS_INPUT);
+                                throw "invalid argument for <near_wall_thickness> (double > 0)";
+                            }
+                            // Successful
+                            hasNearWallThickness = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NEAR_WALL_THICKNESS_INPUT);
+                            throw "invalid argument for <near_wall_thickness> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NEAR_WALL_THICKNESS_EMPTY);
                         throw "<near_wall_thickness> is empty";
@@ -762,7 +825,17 @@ void StarJob::loadStarJob() {
                         surfaceName.push_back(word);
                         // Then get surface size
                         if(issLine >> word){
-                            surfaceSize.push_back(stod(word, nullptr));
+                            try {
+                                surfaceSize.push_back(stod(word, nullptr));
+                                // Check data
+                                if(surfaceSize[surfaceSize.size()-1] <= 0){
+                                    g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_VALUE_INPUT);
+                                    throw "invalid argument for <surface_size> (double > 0)";
+                                }
+                            } catch (const std::invalid_argument &invalidArgument) {
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_VALUE_INPUT);
+                                throw "invalid argument for <surface_size> (double > 0)";
+                            }
                         } else {
                             g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_VALUE_EMPTY);
                             throw "<surface_size> value is empty";
@@ -860,12 +933,28 @@ void StarJob::loadStarJob() {
                                     int coordinates = 0;
                                     while((issLine >> word) && coordinates < 3){
                                         if(coordinates == 0)
-                                            blockX1.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                blockX1.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_X1_INPUT);
+                                                throw "invalid argument for X in <corner_1> (double)";
+                                            }
                                         else if(coordinates == 1)
-                                            blockY1.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                blockY1.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_Y1_INPUT);
+                                                throw "invalid argument for Y in <corner_1> (double)";
+                                            }
                                         else if(coordinates == 2){
-                                            blockZ1.emplace_back((std::stod(word, nullptr)));
-                                            hasBlockCorner1 = true;
+                                            try {
+                                                blockZ1.emplace_back((std::stod(word, nullptr)));
+                                                // Successful
+                                                hasBlockCorner1 = true;
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_Z1_INPUT);
+                                                throw "invalid argument for Z in <corner_1> (double)";
+                                            }
                                         }
                                         coordinates++;
                                     }
@@ -881,12 +970,28 @@ void StarJob::loadStarJob() {
                                     int coordinates = 0;
                                     while((issLine >> word) && coordinates < 3){
                                         if(coordinates == 0)
-                                            blockX2.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                blockX2.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_X2_INPUT);
+                                                throw "nvalid argument for X in <corner_2> (double)";
+                                            }
                                         else if(coordinates == 1)
-                                            blockY2.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                blockY2.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_Y2_INPUT);
+                                                throw "invalid argument for Y in <corner_2> (double)";
+                                            }
                                         else if(coordinates == 2){
-                                            blockZ2.emplace_back((std::stod(word, nullptr)));
-                                            hasBlockCorner2 = true;
+                                            try {
+                                                blockZ2.emplace_back((std::stod(word, nullptr)));
+                                                // Successful
+                                                hasBlockCorner2 = true;
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_Z2_INPUT);
+                                                throw "invalid argument for Z in <corner_2> (double)";
+                                            }
                                         }
                                         coordinates++;
                                     }
@@ -900,8 +1005,19 @@ void StarJob::loadStarJob() {
                                 // Check surface_size
                                 if(word == "surface_size"){
                                     if(issLine >> word){
-                                        blockSurfaceSize.emplace_back(std::stod(word, nullptr));
-                                        hasBlockSurfaceSize = true;
+                                        try {
+                                            blockSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                            // Check data
+                                            if(blockSurfaceSize[blockSurfaceSize.size()-1] <= 0){
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_INPUT);
+                                                throw "invalid argument for block <surface_size> (double > 0)";
+                                            }
+                                            // Successful
+                                            hasBlockSurfaceSize = true;
+                                        } catch (const std::invalid_argument &invalidArgument) {
+                                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_INPUT);
+                                            throw "invalid argument for block <surface_size> (double > 0)";
+                                        }
                                     } else {
                                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_EMPTY);
                                         throw "block <surface_size> is empty";
@@ -965,12 +1081,28 @@ void StarJob::loadStarJob() {
                                     int coordinates = 0;
                                     while((issLine >> word) && coordinates < 3){
                                         if(coordinates == 0)
-                                            cylinderX1.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                cylinderX1.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_X1_INPUT);
+                                                throw "invalid argument for X in cylinder <base_1> (double)";
+                                            }
                                         else if(coordinates == 1)
-                                            cylinderY1.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                cylinderY1.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_Y1_INPUT);
+                                                throw "invalid argument for Y in cylinder <base_1> (double)";
+                                            }
                                         else if(coordinates == 2){
-                                            cylinderZ1.emplace_back((std::stod(word, nullptr)));
-                                            hasCylinderBase1 = true;
+                                            try {
+                                                cylinderZ1.emplace_back((std::stod(word, nullptr)));
+                                                // Successful
+                                                hasCylinderBase1 = true;
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_Z1_INPUT);
+                                                throw "invalid argument for Z in cylinder <base_1> (double)";
+                                            }
                                         }
                                         coordinates++;
                                     }
@@ -986,12 +1118,28 @@ void StarJob::loadStarJob() {
                                     int coordinates = 0;
                                     while((issLine >> word) && coordinates < 3){
                                         if(coordinates == 0)
-                                            cylinderX2.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                cylinderX2.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_X1_INPUT);
+                                                throw "invalid argument for X in cylinder <base_2> (double)";
+                                            }
                                         else if(coordinates == 1)
-                                            cylinderY2.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                cylinderY2.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_Y1_INPUT);
+                                                throw "invalid argument for Y in cylinder <base_2> (double)";
+                                            }
                                         else if(coordinates == 2){
-                                            cylinderZ2.emplace_back((std::stod(word, nullptr)));
-                                            hasCylinderBase2 = true;
+                                            try {
+                                                cylinderZ2.emplace_back((std::stod(word, nullptr)));
+                                                // Successful
+                                                hasCylinderBase2 = true;
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_Z1_INPUT);
+                                                throw "invalid argument for Z in cylinder <base_2> (double)";
+                                            }
                                         }
                                         coordinates++;
                                     }
@@ -1005,8 +1153,19 @@ void StarJob::loadStarJob() {
                                 // Check radius tag
                                 if(word == "radius"){
                                     if(issLine >> word){
-                                        cylinderRadius.emplace_back(std::stod(word, nullptr));
-                                        hasCylinderRadius = true;
+                                        try {
+                                            cylinderRadius.emplace_back(std::stod(word, nullptr));
+                                            // Check data
+                                            if(cylinderRadius[cylinderRadius.size()-1] <= 0){
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_RADIUS_INPUT);
+                                                throw "invalid argument for cylinder <radius> (double > 0)";
+                                            }
+                                            // Successful
+                                            hasCylinderRadius = true;
+                                        } catch (const std::invalid_argument &invalidArgument) {
+                                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_RADIUS_INPUT);
+                                            throw "invalid argument for cylinder <radius> (double > 0)";
+                                        }
                                     } else {
                                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_RADIUS_EMPTY);
                                         throw "cylinder <radius> is empty";
@@ -1016,8 +1175,19 @@ void StarJob::loadStarJob() {
                                 // Check surface_size
                                 if(word == "surface_size"){
                                     if(issLine >> word){
-                                        cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
-                                        hasCylinderSurfaceSize = true;
+                                        try {
+                                            cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                            // Check data
+                                            if(cylinderSurfaceSize[cylinderSurfaceSize.size()-1] <= 0){
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_INPUT);
+                                                throw "invalid argument for cylinder <surface_size> (double > 0)";
+                                            }
+                                            // Successful
+                                            hasCylinderSurfaceSize = true;
+                                        } catch (const std::invalid_argument &invalidArgument) {
+                                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_INPUT);
+                                            throw "invalid argument for cylinder <surface_size> (double > 0)";
+                                        }
                                     } else {
                                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_EMPTY);
                                         throw "cylinder <surface_size> is empty";
@@ -1083,12 +1253,28 @@ void StarJob::loadStarJob() {
                                     int coordinates = 0;
                                     while((issLine >> word) && coordinates < 3){
                                         if(coordinates == 0)
-                                            coneX1.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                coneX1.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_X1_INPUT);
+                                                throw "invalid argument for X in cone <base_1> (double)";
+                                            }
                                         else if(coordinates == 1)
-                                            coneY1.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                coneY1.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_Y1_INPUT);
+                                                throw "invalid argument for Y in cone <base_1> (double)";
+                                            }
                                         else if(coordinates == 2){
-                                            coneZ1.emplace_back((std::stod(word, nullptr)));
-                                            hasConeBase1 = true;
+                                            try {
+                                                coneZ1.emplace_back((std::stod(word, nullptr)));
+                                                // Successful
+                                                hasConeBase1 = true;
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_Z1_INPUT);
+                                                throw "invalid argument for Z in cone <base_1> (double)";
+                                            }
                                         }
                                         coordinates++;
                                     }
@@ -1104,12 +1290,28 @@ void StarJob::loadStarJob() {
                                     int coordinates = 0;
                                     while((issLine >> word) && coordinates < 3){
                                         if(coordinates == 0)
-                                            coneX2.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                coneX2.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_X2_INPUT);
+                                                throw "invalid argument for X in cone <base_2> (double)";
+                                            }
                                         else if(coordinates == 1)
-                                            coneY2.emplace_back(std::stod(word, nullptr));
+                                            try {
+                                                coneY2.emplace_back(std::stod(word, nullptr));
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_Y2_INPUT);
+                                                throw "invalid argument for Y in cone <base_2> (double)";
+                                            }
                                         else if(coordinates == 2){
-                                            coneZ2.emplace_back((std::stod(word, nullptr)));
-                                            hasConeBase2 = true;
+                                            try {
+                                                coneZ2.emplace_back((std::stod(word, nullptr)));
+                                                // Successful
+                                                hasConeBase2 = true;
+                                            } catch (const std::invalid_argument &invalidArgument) {
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_Z2_INPUT);
+                                                throw "invalid argument for Z in cone <base_2> (double)";
+                                            }
                                         }
                                         coordinates++;
                                     }
@@ -1123,8 +1325,19 @@ void StarJob::loadStarJob() {
                                 // Check radius_1 tag
                                 if(word == "radius_1"){
                                     if(issLine >> word){
-                                        coneRadius1.emplace_back(std::stod(word, nullptr));
-                                        hasConeRadius1 = true;
+                                        try {
+                                            coneRadius1.emplace_back(std::stod(word, nullptr));
+                                            // Check data
+                                            if(coneRadius1[coneRadius1.size()-1] <= 0){
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_1_INPUT);
+                                                throw "invalid argument for cone <radius_1> (double > 0)";
+                                            }
+                                            // Successful
+                                            hasConeRadius1 = true;
+                                        } catch (const std::invalid_argument &invalidArgument) {
+                                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_1_INPUT);
+                                            throw "invalid argument for cone <radius_1> (double > 0)";
+                                        }
                                     } else {
                                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_1_EMPTY);
                                         throw "cone <radius_1> is empty";
@@ -1134,8 +1347,19 @@ void StarJob::loadStarJob() {
                                 // Check radius_2 tag
                                 if(word == "radius_2"){
                                     if(issLine >> word){
-                                        coneRadius2.emplace_back(std::stod(word, nullptr));
-                                        hasConeRadius2 = true;
+                                        try {
+                                            coneRadius2.emplace_back(std::stod(word, nullptr));
+                                            // Check data
+                                            if(coneRadius2[coneRadius2.size()-1] <= 0){
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_2_INPUT);
+                                                throw "invalid argument for cone <radius_2> (double > 0)";
+                                            }
+                                            // Successful
+                                            hasConeRadius2 = true;
+                                        } catch (const std::invalid_argument &invalidArgument) {
+                                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_2_INPUT);
+                                            throw "invalid argument for cone <radius_2> (double > 0)";
+                                        }
                                     } else {
                                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_2_EMPTY);
                                         throw "cone <radius_2> is empty";
@@ -1145,8 +1369,19 @@ void StarJob::loadStarJob() {
                                 // Check surface_size
                                 if(word == "surface_size"){
                                     if(issLine >> word){
-                                        coneSurfaceSize.emplace_back(std::stod(word, nullptr));
-                                        hasConeSurfaceSize = true;
+                                        try {
+                                            coneSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                            // Check data
+                                            if(coneSurfaceSize[coneSurfaceSize.size()-1] <= 0){
+                                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_INPUT);
+                                                throw "invalid argument for cone <surface_size> (double > 0)";
+                                            }
+                                            // Successful
+                                            hasConeSurfaceSize = true;
+                                        } catch (const std::invalid_argument &invalidArgument) {
+                                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_INPUT);
+                                            throw "invalid argument for cone <surface_size> (double > 0)";
+                                        }
                                     } else {
                                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_EMPTY);
                                         throw "cone <surface_size> is empty";
@@ -1226,7 +1461,17 @@ void StarJob::loadStarJob() {
                 // Check dynamic_viscosity
                 if(hasBeginPhysicsModel && (word == "dynamic_viscosity")){
                     if(issLine >> word){
-                        dynamicViscosity = std::stod(word, nullptr);
+                        try {
+                            dynamicViscosity = std::stod(word, nullptr);
+                            // Check data
+                            if(dynamicViscosity <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_INPUT);
+                                throw "invalid argument for <dynamic_viscosity> (double > 0)";
+                            }
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_INPUT);
+                            throw "invalid argument for <dynamic_viscosity> (double > 0)";
+                        }
 //                        hasDynamicViscosity = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_EMPTY);
@@ -1237,8 +1482,19 @@ void StarJob::loadStarJob() {
                 // Check static_temperature
                 if(hasBeginPhysicsModel && word == ("static_temperature")){
                     if(issLine >> word){
-                        staticTemperature = std::stod(word, nullptr);
-                        hasStaticTemperature = true;
+                        try {
+                            staticTemperature = std::stod(word, nullptr);
+                            // Check data
+                            if(staticTemperature <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STATIC_TEMPERATURE_INPUT);
+                                throw "invalid argument for <static_temperature> (double > 0)";
+                            }
+                            // Successful
+                            hasStaticTemperature = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STATIC_TEMPERATURE_INPUT);
+                            throw "invalid argument for <static_temperature> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STATIC_TEMPERATURE_EMPTY);
                         throw "<static_temperature> is empty";
@@ -1248,8 +1504,19 @@ void StarJob::loadStarJob() {
                 // Check reference_pressure
                 if(hasBeginPhysicsModel && (word == "reference_pressure")){
                     if(issLine >> word){
-                        referencePressure = std::stod(word, nullptr);
-                        hasReferencePressure = true;
+                        try {
+                            referencePressure = std::stod(word, nullptr);
+                            // Check data
+                            if(referencePressure <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_PRESSURE_INPUT);
+                                throw "invalid argument for <reference_pressure> (double > 0)";
+                            }
+                            // Successful
+                            hasReferencePressure = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_PRESSURE_INPUT);
+                            throw "invalid argument for <reference_pressure> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_PRESSURE_EMPTY);
                         throw "<reference_pressure> is empty";
@@ -1259,8 +1526,19 @@ void StarJob::loadStarJob() {
                 // Check reference_velocity
                 if(hasBeginPhysicsModel && (word == "reference_velocity")){
                     if(issLine >> word){
-                        referenceVelocity = std::stod(word, nullptr);
-                        hasReferenceVelocity = true;
+                        try {
+                            referenceVelocity = std::stod(word, nullptr);
+                            // Check data
+                            if(referenceVelocity <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_VELOCITY_INPUT);
+                                throw "invalid argument for <reference_velocity> (double > 0)";
+                            }
+                            // Successful
+                            hasReferenceVelocity = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_VELOCITY_INPUT);
+                            throw "invalid argument for <reference_velocity> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_VELOCITY_EMPTY);
                         throw "<reference_velocity> is empty";
@@ -1270,8 +1548,19 @@ void StarJob::loadStarJob() {
                 // Check reference_density
                 if(hasBeginPhysicsModel && (word == "reference_density")){
                     if(issLine >> word){
-                        referenceDensity = std::stod(word, nullptr);
-                        hasReferenceDensity = true;
+                        try {
+                            referenceDensity = std::stod(word, nullptr);
+                            // Check data
+                            if(referenceDensity <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_DENSITY_INPUT);
+                                throw "invalid argument for <reference_density> (double > 0)";
+                            }
+                            // Successful
+                            hasReferenceDensity = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_DENSITY_INPUT);
+                            throw "invalid argument for <reference_density> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_DENSITY_EMPTY);
                         throw "<reference_density> is empty";
@@ -1281,8 +1570,19 @@ void StarJob::loadStarJob() {
                 // Check mach_number
                 if(hasBeginPhysicsModel && (word == "mach_number")){
                     if(issLine >> word){
-                        machNumber = std::stod(word, nullptr);
-                        hasMachNumber = true;
+                        try {
+                            machNumber = std::stod(word, nullptr);
+                            // Check data
+                            if(machNumber <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MACH_NUMBER_INPUT);
+                                throw "invalid argument for <mach_number> (double > 0)";
+                            }
+                            // Successful
+                            hasMachNumber = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MACH_NUMBER_INPUT);
+                            throw "invalid argument for <mach_number> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MACH_NUMBER_EMPTY);
                         throw "<mach_number> is empty";
@@ -1292,8 +1592,14 @@ void StarJob::loadStarJob() {
                 // Check flow_direction_X
                 if(hasBeginPhysicsModel && (word == "flow_direction_X")){
                     if(issLine >> word){
-                        flowDirectionX = std::stod(word, nullptr);
-                        hasFlowDirectionX = true;
+                        try {
+                            flowDirectionX = std::stod(word, nullptr);
+                            // Successful
+                            hasFlowDirectionX = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_X_INPUT);
+                            throw "invalid argument for <flow_direction_X>";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_X_EMPTY);
                         throw "<flow_direction_X> is empty";
@@ -1303,8 +1609,14 @@ void StarJob::loadStarJob() {
                 // Check flow_direction_Y
                 if(hasBeginPhysicsModel && (word == "flow_direction_Y")){
                     if(issLine >> word){
-                        flowDirectionY = std::stod(word, nullptr);
-                        hasFlowDirectionY = true;
+                        try {
+                            flowDirectionY = std::stod(word, nullptr);
+                            // Successful
+                            hasFlowDirectionY = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Y_INPUT);
+                            throw "invalid argument for <flow_direction_Y>";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Y_EMPTY);
                         throw "<flow_direction_Y> is empty";
@@ -1314,8 +1626,14 @@ void StarJob::loadStarJob() {
                 // Check flow_direction_Z
                 if(hasBeginPhysicsModel && (word == "flow_direction_Z")){
                     if(issLine >> word){
-                        flowDirectionZ = std::stod(word, nullptr);
-                        hasFlowDirectionZ = true;
+                        try {
+                            flowDirectionZ = std::stod(word, nullptr);
+                            // Successful
+                            hasFlowDirectionZ = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Z_INPUT);
+                            throw "invalid argument for <flow_direction_Z>";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FLOW_DIRECTION_Z_EMPTY);
                         throw "<flow_direction_Z> is empty";
@@ -1394,8 +1712,19 @@ void StarJob::loadStarJob() {
                 // Check CFL
                 if(hasBeginSolverOptions && (word == "CFL")){
                     if(issLine >> word){
-                        CFL = std::stod(word, nullptr);
-                        hasCFL = true;
+                        try {
+                            CFL = std::stod(word, nullptr);
+                            // Check data
+                            if(CFL <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SOLVER_OPTIONS_CFL_INPUT);
+                                throw "invalid argument for <CFL> (double > 0)";
+                            }
+                            // Successful
+                            hasCFL = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SOLVER_OPTIONS_CFL_INPUT);
+                            throw "invalid argument for <CFL> (double > 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SOLVER_OPTIONS_CFL_EMPTY);
                         throw "<CFL> is empty";
@@ -1438,8 +1767,19 @@ void StarJob::loadStarJob() {
                 // Check max_steps
                 if(hasBeginStoppingCriteria && (word == "max_steps")){
                     if(issLine >> word){
-                        maxSteps = std::stoi(word, nullptr);
-                        hasMaxSteps = true;
+                        try {
+                            maxSteps = std::stoi(word, nullptr);
+                            // Check data
+                            if(maxSteps <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MAX_STEPS_INPUT);
+                                throw "invalid argument for <max_steps> (int >= 1)";
+                            }
+                            // Successful
+                            hasMaxSteps = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MAX_STEPS_INPUT);
+                            throw "invalid argument for <max_steps> (int >= 1)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MAX_STEPS_EMPTY);
                         throw "<max_steps> is empty";
@@ -1449,8 +1789,19 @@ void StarJob::loadStarJob() {
                 // Check num_samples
                 if(hasBeginStoppingCriteria && (word == "num_samples")){
                     if(issLine >> word){
-                        numSamples = std::stoi(word, nullptr);
-                        hasSamples = true;
+                        try {
+                            numSamples = std::stoi(word, nullptr);
+                            // Check data
+                            if(numSamples <= 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_SAMPLES_INPUT);
+                                throw "invalid argument for <num_samples> (int >= 1)";
+                            }
+                            // Successful
+                            hasSamples = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_SAMPLES_INPUT);
+                            throw "invalid argument for <num_samples> (int >= 1)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_SAMPLES_EMPTY);
                         throw "<num_samples> is empty";
@@ -1460,19 +1811,36 @@ void StarJob::loadStarJob() {
                 // Check asymptotic_CL
                 if(hasBeginStoppingCriteria && (word == "asymptotic_CL")){
                     if(issLine >> word){
-                        asymptoticCL = std::stod(word, nullptr);
-                        hasAsymptotycCL = true;
+                        try {
+                            asymptoticCL = std::stod(word, nullptr);
+                            // Successful
+                            hasAsymptotycCL = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CL_INPUT);
+                            throw "invalid argument for <asymptotic_CL> (double)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CL_EMPTY);
                         throw "<asymptotic_CL> is empty";
                     }
                 }
 
-                // Check asymptotic_CL
+                // Check asymptotic_CD
                 if(hasBeginStoppingCriteria && (word == "asymptotic_CD")){
                     if(issLine >> word){
-                        asymptoticCD = std::stod(word, nullptr);
-                        hasAsymptotycCD = true;
+                        try {
+                            asymptoticCD = std::stod(word, nullptr);
+                            // Check data
+                            if(asymptoticCD < 0){
+                                g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CD_INPUT);
+                                throw "invalid argument for <asymptotic_CD> (double >-= 0)";
+                            }
+                            // Successful
+                            hasAsymptotycCD = true;
+                        } catch (const std::invalid_argument &invalidArgument) {
+                            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CD_INPUT);
+                            throw "invalid argument for <asymptotic_CD> (double >-= 0)";
+                        }
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CD_EMPTY);
                         throw "<asymptotic_CD> is empty";
@@ -1484,8 +1852,11 @@ void StarJob::loadStarJob() {
                     // Check if stopping criteria data is complete
                     if(hasMaxSteps &&
                             // If has samples, it must have criteria for CL and/or CD
-                            ((hasSamples && (hasAsymptotycCL || hasAsymptotycCD)) ||
-                             !hasSamples && (!hasAsymptotycCL && !hasAsymptotycCD))){
+                            (
+                                    (hasSamples && (hasAsymptotycCL || hasAsymptotycCD))    ||
+                                    (!hasSamples && (!hasAsymptotycCL && !hasAsymptotycCD))
+                            )
+                            ){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Stopping criteria"
                                                        << std::right << std::setw(mediumColumn) << ".";
                         colorText("Loaded\n", GREEN);

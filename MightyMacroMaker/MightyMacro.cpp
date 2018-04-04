@@ -98,7 +98,8 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
                                              currentStarJob->getConeSurfaceSize()});
 
     // Physics values assignment (mach, viscosity, ref. pressure, static temp., flow direction, velocity components)
-    physicsValues = PhysicsValues(currentStarJob->getMachNumber(),
+    double _machNumber = currentStarJob->getMachNumber();
+    physicsValues = PhysicsValues(_machNumber,
                                   currentStarJob->getDynamicViscosity(),
                                   currentStarJob->getReferencePressure(),
                                   currentStarJob->getStaticTemperature(),
@@ -116,7 +117,7 @@ MightyMacro::MightyMacro(StarJob *_currentStarJob): currentStarJob (_currentStar
 
     // Solver options assignment (CFL) (if not provided => CFL = 30/Mach)
     solverOptions = ((currentStarJob->getCustomSolverOptions())?
-                     SolverOptions(currentStarJob->getCFL()) : SolverOptions(30.0/(currentStarJob->getMachNumber())));
+                     SolverOptions(currentStarJob->getCFL()) : SolverOptions(30.0/(_machNumber)));
 
     // Solution monitor assignment (ref. density, ref, velocity, lift direction, drag direction, viewUp, normal)
     solutionMonitors = SolutionMonitors(currentStarJob->getReferenceDensity(),

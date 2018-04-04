@@ -23,7 +23,7 @@ int g_exitStatus = static_cast<int>(ExitCodes::SUCCESS);
 
 int main(int argc, char * argv[]) {
     bool         batchModeOption = false;
-    std::string jobFilePath      = "C:\\Users\\Nuno\\Dev\\RemoteStar\\star_jobData";
+    std::string jobFilePath      = "C:\\Users\\Nuno\\Dev\\RemoteStar\\star_jobData"; // "/Users/Nuno/Dev/RemoteStar/star_jobData";
     // Check command line arguments
     switch(argc){
         case 1:

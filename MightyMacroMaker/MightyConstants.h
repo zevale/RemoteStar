@@ -16,6 +16,7 @@ namespace Default{
     constexpr    bool newPhysics        (true);
     constexpr     int scalar            (32);
     constexpr    bool boolean           (false);
+    constexpr    bool deactivated       (false);
 
     // ---------- PAUSE
     constexpr int pauseTime = 3000; // Milliseconds

@@ -60,7 +60,7 @@ private:
 
 public:
     // Constructor
-    explicit MightyMacro(StarJob *_currentStarJob = nullptr);
+    explicit MightyMacro(StarJob *_currentStarJob);
 
     // Member functions
     void writeMacro();

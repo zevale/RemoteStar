@@ -114,9 +114,6 @@ void SSH::loadSSH() {
     } else if (countWord == 5 || countWord == 6) {
         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SERVER_USER_MISSING);
         throw "no user in file <star_sshServer>";
-    } else if (countWord > 7) {
-        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SERVER_USAGE);
-        throw "wrong syntax in file <star_sshServer>";
     }
 }
 

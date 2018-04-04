@@ -406,7 +406,7 @@ int initializeSSH(SSH& _sshConnection) {
         _sshConnection.loadSSH();
     } catch (const char* loadSshException) {
         // Error loading ssh server data from <star_sshServer>
-        colorText("\n      ERROR: " + std::string(loadSshException) + "\n", RED);
+        colorText("\n     ERROR: " + std::string(loadSshException) + "\n", RED);
 //        std::cerr << "\nERROR: " << loadSshException << std::endl;
         return FALSE;
     }
@@ -436,8 +436,10 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
                                       std::string(CrossPlatform::separator) + "star_runScript"), std::ios_base::binary);
 
         // Check if file is open
-        if(!shellRunScriptFile)
+        if(!shellRunScriptFile){
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_STAR_HOST_SHELL_SCRIPT_CANNOT_WRITE);
             throw "Cannot write shell script <star_runScript>";
+        }
 
         // Initialize sheBang and STAR CCM+ command line arguments
         std::string sheBang = "#!/bin/sh\n";
