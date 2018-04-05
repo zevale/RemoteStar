@@ -1,21 +1,23 @@
 #include "StarJob.h"
-#include "MightyMacroMaker/MightyConstants.h"
 #include "star_client.h"
-#include "MightyMacroMaker/MightyMath.h"
 #include "exit_codes.h"
+#include "MightyMacroMaker/MightyConstants.h"
+#include "MightyMacroMaker/MightyMath.h"
 
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <iomanip>
+#include <iomanip>  // To print text in columns
 
+// Windows support
 #ifdef _WIN32
 #include <Windows.h>
 #endif
 
+// Linux and Mac support
 #if defined(linux) || defined(__APPLE__)
-#include <thread>               // To halt the thread while loadingScreen()
-#include <chrono>               // Because of miliseconds()
+#include <thread>   // To halt the thread while loadingScreen()
+#include <chrono>   // Because of miliseconds()
 #endif
 
 /*
@@ -23,7 +25,9 @@
  *
  * NOTE
  * Overloaded getters will append a _subPath to either ClientJobDirectory or ServerJobDirectory .
- * There is no need to start _subPath with "/"
+ * There is no need to start _subPath with a slash as main directory must end in a slash
+ * Server is assumed to be runing Linux, so will use forward slash as separator
+ * Client is platform dependent and will use the appropriate separator defined in MightyConstants.h
  */
 std::string StarJob::getJobName() const {
     return jobName;
@@ -105,9 +109,9 @@ double StarJob::getNearWallThickness() const {
     return nearWallThickness;
 }
 
-std::vector<std::string> StarJob::getSurfaceName() const {
-    return surfaceName;
-}
+//std::vector<std::string> StarJob::getSurfaceName() const {
+//    return surfaceName;
+//}
 
 std::vector<double> StarJob::getSurfaceSize() const {
     return surfaceSize;
@@ -270,17 +274,23 @@ double StarJob::getAsymptoticCD() const {
 }
 
 /*
- * Constructor that sets the job file path assuming  <star_jobData>
- * is in the current directory by default
+ * CONSTRUCTOR
+ * Sets the job file path assuming <star_jobData> is in the working
+ * directory by default.
+ *
+ * DEFAULTS
+ * jobFilePath - directory where RemoteStar is launched from
+ *
+ * Others cf. MightConstants.h
  */
-StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
+StarJob::StarJob(bool _batchMode, const std::string& _jobFilePath) :
         // Command line arguments
-        jobFilePath    (_jobFilePath),
         batchModeOption(_batchMode),
+        jobFilePath    (_jobFilePath),
 
         // Initialization job defaults
         initializationJob(Default::initializationJob),
-        newMesh           (Default::newMesh),
+        newMesh          (Default::newMesh),
 
         // Auto save defaults (might not be assigned by user)
         autoSaveSimulation(Default::autoSaveSimulation),
@@ -308,8 +318,7 @@ StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
  * loadStarJob()
  *
  * DESCRIPTION
- * Loads the data for the class members from the file <star_jobData>
- * located in the folder .../StarClient/.
+ * Loads the data for the class members from the file job file.
  *
  * RETURN
  * Void, but throws an exception if the data cannot be loaded.
@@ -319,9 +328,6 @@ StarJob::StarJob(const std::string& _jobFilePath, bool _batchMode) :
  * Required by initializeStarJob(StarJob& _starJob).
  */
 void StarJob::loadStarJob() {
-    // Holds every word read in from <star_hostList>
-    std::string word;
-
     // Open file
     std::ifstream starJobFile(jobFilePath);
 
@@ -364,25 +370,9 @@ void StarJob::loadStarJob() {
 
     // Volumentric control options
     bool hasBeginVolumetricControls = false;
-//    bool hasBlock                   = false;
-    bool hasBlockCorner1            = false;
-    bool hasBlockCorner2            = false;
-    bool hasBlockSurfaceSize        = false;
-//    bool hasCylinder                = false;
-    bool hasCylinderBase1           = false;
-    bool hasCylinderBase2           = false;
-    bool hasCylinderRadius          = false;
-    bool hasCylinderSurfaceSize     = false;
-//    bool hasCone                    = false;
-    bool hasConeBase1               = false;
-    bool hasConeBase2               = false;
-    bool hasConeRadius1             = false;
-    bool hasConeRadius2             = false;
-    bool hasConeSurfaceSize         = false;
 
     // Physics model mandatory options
     bool hasBeginPhysicsModel = false;
-//    bool hasDynamicViscosity  = false;
     bool hasStaticTemperature = false;
     bool hasReferencePressure = false;
     bool hasReferenceVelocity = false;
@@ -413,27 +403,27 @@ void StarJob::loadStarJob() {
     bool regions               = false;
 
     // Parser status
-    bool busyElsewhere = false;
+    bool busyElsewhere;
 
-    // PARSE <star_jobData>
+    // PARSE job file
+    std::string lineFromFile;
+    std::string wordFromLine;
 
     std::cout << "\n:::::::::::: LOADING JOB" << std::endl;
 
-    // Get line from file
-    std::string line;
-    while(std::getline(starJobFile, line)){
+    while(std::getline(starJobFile, lineFromFile)){
 
         // Get words from line
-        std::istringstream issLine(line);
-        while(issLine >> word){
+        std::istringstream issLine(lineFromFile);
+        while(issLine >> wordFromLine){
 //            std::cout << word << std::endl;
 
             // Check #BEGIN_STAR_JOB tag
-            if(!hasBeginStarJob && (word == "#BEGIN_STAR_JOB"))
+            if(!hasBeginStarJob && (wordFromLine == "#BEGIN_STAR_JOB"))
                 hasBeginStarJob = true;
 
             // Check #END_STAR_JOB tag and exit
-            if(!hasEndStarJob && (word == "#END_STAR_JOB")){
+            if(!hasEndStarJob && (wordFromLine == "#END_STAR_JOB")){
                 hasEndStarJob = true;
                 break;
             }
@@ -448,13 +438,13 @@ void StarJob::loadStarJob() {
             if(!jobSetup && !busyElsewhere){
 
                 // Check for #BEGIN_JOB_SETUP tag
-                if(hasBeginStarJob && (word == "#BEGIN_JOB_SETUP"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_JOB_SETUP"))
                     hasBeginJobSetup = true;
 
                 // Check for job_name
-                if(hasBeginJobSetup && (word == "job_name")){
-                    if(issLine >> word) {
-                        jobName = word;
+                if(hasBeginJobSetup && (wordFromLine == "job_name")){
+                    if(issLine >> wordFromLine) {
+                        jobName = wordFromLine;
                         hasJobName = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_JOB_NAME_EMPTY);
@@ -463,9 +453,9 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check for initialization_job
-                if(hasBeginJobSetup && (word == "initialization_job")){
-                    if(issLine >> word) {
-                        initializationJob = word;
+                if(hasBeginJobSetup && (wordFromLine == "initialization_job")){
+                    if(issLine >> wordFromLine) {
+                        initializationJob = wordFromLine;
                         hasInitialization = true;
                     } else{
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_INITIALIZATION_JOB_EMPTY);
@@ -474,9 +464,9 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check for client_directory
-                if(hasBeginJobSetup && (word == "client_directory")){
-                    if(issLine >> word) {
-                        clientDirectory = word;
+                if(hasBeginJobSetup && (wordFromLine == "client_directory")){
+                    if(issLine >> wordFromLine) {
+                        clientDirectory = wordFromLine;
                         hasClientDirectory = true;
                     } else{
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CLIENT_DIRECTORY_EMPTY);
@@ -485,9 +475,9 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check for server_directory
-                if(hasBeginJobSetup && (word == "server_directory")){
-                    if(issLine >> word){
-                        serverDirectory = word;
+                if(hasBeginJobSetup && (wordFromLine == "server_directory")){
+                    if(issLine >> wordFromLine){
+                        serverDirectory = wordFromLine;
                         hasServerDirectory = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SERVER_DIRECTORY_EMPTY);
@@ -496,12 +486,12 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check save_sim_file
-                if(hasBeginJobSetup && (word == "save_sim_file")){
-                    if(issLine >> word){
-                        if(word == "yes"){
+                if(hasBeginJobSetup && (wordFromLine == "save_sim_file")){
+                    if(issLine >> wordFromLine){
+                        if(wordFromLine == "yes"){
                             saveSimFile = true;
                             hasSaveSimFile = true;
-                        } else if(word == "no"){
+                        } else if(wordFromLine == "no"){
                             saveSimFile = false;
                             hasSaveSimFile = true;
                         } else {
@@ -515,12 +505,12 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check clean_server
-                if(hasBeginJobSetup && (word == "clean_server")){
-                    if(issLine >> word){
-                        if(word == "yes"){
+                if(hasBeginJobSetup && (wordFromLine == "clean_server")){
+                    if(issLine >> wordFromLine){
+                        if(wordFromLine == "yes"){
                             cleanServer = true;
                             hasCleanServer = true;
-                        } else if(word == "no"){
+                        } else if(wordFromLine == "no"){
                             cleanServer = false;
                             hasCleanServer = true;
                         } else {
@@ -534,12 +524,12 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check auto_save
-                if(hasBeginJobSetup && (word == "auto_save")){
-                    if(issLine >> word){
-                        if(word == "yes"){
+                if(hasBeginJobSetup && (wordFromLine == "auto_save")){
+                    if(issLine >> wordFromLine){
+                        if(wordFromLine == "yes"){
                             autoSaveSimulation = true;
                             hasAutoSave = true;
-                        } else if(word == "no"){
+                        } else if(wordFromLine == "no"){
                             autoSaveSimulation = false;
                             hasAutoSave = false;
                         } else {
@@ -553,10 +543,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check auto_save_files
-                if(hasBeginJobSetup && (word == "auto_save_files")){
-                    if(issLine >> word){
+                if(hasBeginJobSetup && (wordFromLine == "auto_save_files")){
+                    if(issLine >> wordFromLine){
                         try {
-                            numAutoSaveFiles = std::stoi(word, nullptr);
+                            numAutoSaveFiles = std::stoi(wordFromLine, nullptr);
                             // Check it is positive
                             if(numAutoSaveFiles < 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_FILES_INPUT);
@@ -575,10 +565,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check auto_save_iterations
-                if(hasBeginJobSetup && (word == "auto_save_iterations")){
-                    if(issLine >> word){
+                if(hasBeginJobSetup && (wordFromLine == "auto_save_iterations")){
+                    if(issLine >> wordFromLine){
                         try {
-                            iterationInterval = std::stoi(word, nullptr);
+                            iterationInterval = std::stoi(wordFromLine, nullptr);
                             // Check it is >= 1
                             if(iterationInterval < 1){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_AUTO_SAVE_ITERATIONS_INPUT);
@@ -597,7 +587,7 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check #END_JOB_SETUP
-                if(hasBeginJobSetup && (word == "#END_JOB_SETUP")){
+                if(hasBeginJobSetup && (wordFromLine == "#END_JOB_SETUP")){
                     // Check if job setup data is complete
                     if(hasJobName && hasClientDirectory && hasServerDirectory && hasSaveSimFile && hasCleanServer
                             && ((hasAutoSave && hasAutoSaveFiles && hasAutoSaveIterations) || !hasAutoSave)) {
@@ -643,24 +633,25 @@ void StarJob::loadStarJob() {
             }
             // END JOB SETUP
 
+            // REGIONS
             busyElsewhere = (hasBeginJobSetup           ||
                              hasBeginMeshModel          ||
                              hasBeginVolumetricControls ||
                              hasBeginPhysicsModel       ||
                              hasBeginSolverOptions      ||
                              hasBeginStoppingCriteria);
-            // REGIONS
+
             if(!regions && !busyElsewhere){
 
                 // Check #BEGIN_REGIONS
-                if(hasBeginStarJob && (word == "#BEGIN_REGIONS"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_REGIONS"))
                     hasBeginRegions = true;
 
                 // Check wall region
-                if(hasBeginRegions && (word == "wall")){
+                if(hasBeginRegions && (wordFromLine == "wall")){
                     boundaryCondition.emplace_back("wall");
-                    if(issLine >> word){
-                        regionName.push_back(word);
+                    if(issLine >> wordFromLine){
+                        regionName.push_back(wordFromLine);
                         hasOneWall = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_WALL_REGION_MISSING_NAME);
@@ -669,10 +660,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check free stream region
-                if(hasBeginRegions && (word == "free_stream")){
+                if(hasBeginRegions && (wordFromLine == "free_stream")){
                     boundaryCondition.emplace_back("freeStream");
-                    if(issLine >> word){
-                        regionName.push_back(word);
+                    if(issLine >> wordFromLine){
+                        regionName.push_back(wordFromLine);
                         hasOneFreeStream = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_FREE_STREAM_REGION_MISSING_NAME);
@@ -681,10 +672,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check symmetry plane region
-                if(hasBeginRegions && (word == "symmetry_plane")){
+                if(hasBeginRegions && (wordFromLine == "symmetry_plane")){
                     boundaryCondition.emplace_back("symmetryPlane");
-                    if(issLine >> word)
-                        regionName.push_back(word);
+                    if(issLine >> wordFromLine)
+                        regionName.push_back(wordFromLine);
                     else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SYMMETRY_PLANE_REGION_MISSING_NAME);
                         throw "symmetry plane region is missing name";
@@ -692,7 +683,7 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check #END_REGIONS
-                if(hasBeginRegions && (word == "#END_REGIONS")){
+                if(hasBeginRegions && (wordFromLine == "#END_REGIONS")){
                     // Check if regions data is complete
                     if(hasOneWall && hasOneFreeStream){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Regions"
@@ -726,14 +717,14 @@ void StarJob::loadStarJob() {
             if(!meshModel && !busyElsewhere){
 
                 // Check #BEGIN_MESH_MODEL tag
-                if(hasBeginStarJob && (word == "#BEGIN_MESH_MODEL"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_MESH_MODEL"))
                     hasBeginMeshModel = true;
 
                 // Check base_size
-                if(hasBeginMeshModel && (word == "base_size")){
-                    if(issLine >> word){
+                if(hasBeginMeshModel && (wordFromLine == "base_size")){
+                    if(issLine >> wordFromLine){
                         try {
-                            baseSize = std::stod(word, nullptr);
+                            baseSize = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(baseSize <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BASE_SIZE_INPUT);
@@ -752,11 +743,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check num_prism_layers
-                if(hasBeginMeshModel && (word == "num_prism_layers")){
-                    if(issLine >> word){
+                if(hasBeginMeshModel && (wordFromLine == "num_prism_layers")){
+                    if(issLine >> wordFromLine){
                         try {
-                            prismLayers = std::stoi(word, nullptr);
-                            // Check data
+                            prismLayers = std::stoi(wordFromLine, nullptr);
                             // Check data
                             if(prismLayers < 1){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_PRISM_LAYER_INPUT);
@@ -775,10 +765,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check prism_layer_thickness
-                if(hasBeginMeshModel && (word == "prism_layer_thickness")){
-                    if(issLine >> word){
+                if(hasBeginMeshModel && (wordFromLine == "prism_layer_thickness")){
+                    if(issLine >> wordFromLine){
                         try {
-                            prismLayerThickness = std::stod(word, nullptr);
+                            prismLayerThickness = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(prismLayerThickness <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_PRISM_LAYER_THICKNESS_INPUT);
@@ -797,10 +787,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check near_wall_thickness
-                if(hasBeginMeshModel && (word == "near_wall_thickness")){
-                    if(issLine >> word){
+                if(hasBeginMeshModel && (wordFromLine == "near_wall_thickness")){
+                    if(issLine >> wordFromLine){
                         try {
-                            nearWallThickness = std::stod(word, nullptr);
+                            nearWallThickness = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(nearWallThickness <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NEAR_WALL_THICKNESS_INPUT);
@@ -819,14 +809,14 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check surface_size
-                if(hasBeginMeshModel && (word == "surface_size")){
+                if(hasBeginMeshModel && (wordFromLine == "surface_size")){
                     // First get the surface name
-                    if(issLine >> word){
-                        surfaceName.push_back(word);
+                    if(issLine >> wordFromLine){
+                        surfaceName.push_back(wordFromLine);
                         // Then get surface size
-                        if(issLine >> word){
+                        if(issLine >> wordFromLine){
                             try {
-                                surfaceSize.push_back(stod(word, nullptr));
+                                surfaceSize.push_back(stod(wordFromLine, nullptr));
                                 // Check data
                                 if(surfaceSize[surfaceSize.size()-1] <= 0){
                                     g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SURFACE_SIZE_VALUE_INPUT);
@@ -851,7 +841,7 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check #END_MESH_MODEL tag
-                if(hasBeginMeshModel && (word == "#END_MESH_MODEL")){
+                if(hasBeginMeshModel && (wordFromLine == "#END_MESH_MODEL")){
                     // Check mesh model data is complete
                     if(     hasBaseSize
                        &&
@@ -900,55 +890,54 @@ void StarJob::loadStarJob() {
             if(!volumetricControls && !busyElsewhere) {
 
                 // Check #BEGIN_VOLUMETRIC_CONTROLS tag
-                if(hasBeginStarJob && (word == "#BEGIN_VOLUMETRIC_CONTROLS"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_VOLUMETRIC_CONTROLS"))
                     hasBeginVolumetricControls = true;
 
-                while(hasBeginVolumetricControls && std::getline(starJobFile, line)){
+                while(hasBeginVolumetricControls && std::getline(starJobFile, lineFromFile)){
                     // Get first word from line into issLine and word
                     issLine.str("");            // Empty issLine
                     issLine.clear();            // Clear stream's error state
-                    issLine.str(line);          // Update stream
-                    issLine >> word;            // Input first word
+                    issLine.str(lineFromFile);          // Update stream
+                    issLine >> wordFromLine;            // Input first word
 
                     // BLOCK
 
                     // Check block tag
-                    if(word == "block"){
-//                        hasBlock = true;
+                    if(wordFromLine == "block"){
                         // Set block data members to false until data arrives
-                        hasBlockCorner1 = false;
-                        hasBlockCorner2 = false;
-                        hasBlockSurfaceSize = false;
+                        bool hasBlockCorner1 = false;
+                        bool hasBlockCorner2 = false;
+                        bool hasBlockSurfaceSize = false;
 
                         // Get block data
-                        while(std::getline(starJobFile, line)){
+                        while(std::getline(starJobFile, lineFromFile)){
                             // Get words from line into issLine
                             issLine.str("");            // Empty issLine
                             issLine.clear();            // Clear stream's error state
-                            issLine.str(line);          // Update stream
-                            while(issLine >> word){
+                            issLine.str(lineFromFile);          // Update stream
+                            while(issLine >> wordFromLine){
 
                                 // Check block corner_1
-                                if(word == "corner_1"){
+                                if(wordFromLine == "corner_1"){
                                     int coordinates = 0;
-                                    while((issLine >> word) && coordinates < 3){
+                                    while((issLine >> wordFromLine) && coordinates < 3){
                                         if(coordinates == 0)
                                             try {
-                                                blockX1.emplace_back(std::stod(word, nullptr));
+                                                blockX1.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_X1_INPUT);
                                                 throw "invalid argument for X in <corner_1> (double)";
                                             }
                                         else if(coordinates == 1)
                                             try {
-                                                blockY1.emplace_back(std::stod(word, nullptr));
+                                                blockY1.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_1_Y1_INPUT);
                                                 throw "invalid argument for Y in <corner_1> (double)";
                                             }
                                         else if(coordinates == 2){
                                             try {
-                                                blockZ1.emplace_back((std::stod(word, nullptr)));
+                                                blockZ1.emplace_back((std::stod(wordFromLine, nullptr)));
                                                 // Successful
                                                 hasBlockCorner1 = true;
                                             } catch (const std::invalid_argument &invalidArgument) {
@@ -966,26 +955,26 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check block corner_2
-                                if(word == "corner_2"){
+                                if(wordFromLine == "corner_2"){
                                     int coordinates = 0;
-                                    while((issLine >> word) && coordinates < 3){
+                                    while((issLine >> wordFromLine) && coordinates < 3){
                                         if(coordinates == 0)
                                             try {
-                                                blockX2.emplace_back(std::stod(word, nullptr));
+                                                blockX2.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_X2_INPUT);
                                                 throw "nvalid argument for X in <corner_2> (double)";
                                             }
                                         else if(coordinates == 1)
                                             try {
-                                                blockY2.emplace_back(std::stod(word, nullptr));
+                                                blockY2.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_CORNER_2_Y2_INPUT);
                                                 throw "invalid argument for Y in <corner_2> (double)";
                                             }
                                         else if(coordinates == 2){
                                             try {
-                                                blockZ2.emplace_back((std::stod(word, nullptr)));
+                                                blockZ2.emplace_back((std::stod(wordFromLine, nullptr)));
                                                 // Successful
                                                 hasBlockCorner2 = true;
                                             } catch (const std::invalid_argument &invalidArgument) {
@@ -1003,10 +992,10 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check surface_size
-                                if(word == "surface_size"){
-                                    if(issLine >> word){
+                                if(wordFromLine == "surface_size"){
+                                    if(issLine >> wordFromLine){
                                         try {
-                                            blockSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                            blockSurfaceSize.emplace_back(std::stod(wordFromLine, nullptr));
                                             // Check data
                                             if(blockSurfaceSize[blockSurfaceSize.size()-1] <= 0){
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_INPUT);
@@ -1025,7 +1014,7 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check for new part tags arriving too early and stop getting words
-                                if(word == "block" || word == "cone" || word == "cylinder")
+                                if(wordFromLine == "block" || wordFromLine == "cone" || wordFromLine == "cylinder")
                                     break;
                             }
                             // Check if all block data members have been entered
@@ -1035,7 +1024,7 @@ void StarJob::loadStarJob() {
                             }
 
                             // Check for new parts and stop getting lines
-                            if(word == "block" || word == "cone" || word == "cylinder")
+                            if(wordFromLine == "block" || wordFromLine == "cone" || wordFromLine == "cylinder")
                                 break;
                         }
                         // Missing data
@@ -1051,52 +1040,45 @@ void StarJob::loadStarJob() {
                             g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_BLOCK_SURFACE_SIZE_MISSING);
                             throw "block <surface_size> is missing";
                         }
-//                        // Get words from line into issLine and word
-//                        issLine.str("");            // Empty issLine
-//                        issLine.clear();            // Clear stream's error state
-//                        issLine.str(line);          // Update stream
-//                        issLine >> word;            // Input first word
                     }
-
                     // CYLINDER
 
                     // Check cylinder tag
-                    if(word == "cylinder"){
-//                        hasCylinder = true;
+                    if(wordFromLine == "cylinder"){
                         // Set cylinder data members to false until data arrives
-                        hasCylinderBase1       = false;
-                        hasCylinderBase2       = false;
-                        hasCylinderRadius      = false;
-                        hasCylinderSurfaceSize = false;
+                        bool hasCylinderBase1       = false;
+                        bool hasCylinderBase2       = false;
+                        bool hasCylinderRadius      = false;
+                        bool hasCylinderSurfaceSize = false;
 
                         // Get cylinder data
-                        while(std::getline(starJobFile, line)) {
+                        while(std::getline(starJobFile, lineFromFile)) {
                             // Get words from line into issLine
                             issLine.str("");            // Empty issLine
                             issLine.clear();            // Clear stream's error state
-                            issLine.str(line);          // Update stream
-                            while (issLine >> word) {
+                            issLine.str(lineFromFile);          // Update stream
+                            while (issLine >> wordFromLine) {
                                 // Check cylinder base_1
-                                if(word == "base_1"){
+                                if(wordFromLine == "base_1"){
                                     int coordinates = 0;
-                                    while((issLine >> word) && coordinates < 3){
+                                    while((issLine >> wordFromLine) && coordinates < 3){
                                         if(coordinates == 0)
                                             try {
-                                                cylinderX1.emplace_back(std::stod(word, nullptr));
+                                                cylinderX1.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_X1_INPUT);
                                                 throw "invalid argument for X in cylinder <base_1> (double)";
                                             }
                                         else if(coordinates == 1)
                                             try {
-                                                cylinderY1.emplace_back(std::stod(word, nullptr));
+                                                cylinderY1.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_1_Y1_INPUT);
                                                 throw "invalid argument for Y in cylinder <base_1> (double)";
                                             }
                                         else if(coordinates == 2){
                                             try {
-                                                cylinderZ1.emplace_back((std::stod(word, nullptr)));
+                                                cylinderZ1.emplace_back((std::stod(wordFromLine, nullptr)));
                                                 // Successful
                                                 hasCylinderBase1 = true;
                                             } catch (const std::invalid_argument &invalidArgument) {
@@ -1114,26 +1096,26 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check cylinder base_2
-                                if(word == "base_2"){
+                                if(wordFromLine == "base_2"){
                                     int coordinates = 0;
-                                    while((issLine >> word) && coordinates < 3){
+                                    while((issLine >> wordFromLine) && coordinates < 3){
                                         if(coordinates == 0)
                                             try {
-                                                cylinderX2.emplace_back(std::stod(word, nullptr));
+                                                cylinderX2.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_X1_INPUT);
                                                 throw "invalid argument for X in cylinder <base_2> (double)";
                                             }
                                         else if(coordinates == 1)
                                             try {
-                                                cylinderY2.emplace_back(std::stod(word, nullptr));
+                                                cylinderY2.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_BASE_2_Y1_INPUT);
                                                 throw "invalid argument for Y in cylinder <base_2> (double)";
                                             }
                                         else if(coordinates == 2){
                                             try {
-                                                cylinderZ2.emplace_back((std::stod(word, nullptr)));
+                                                cylinderZ2.emplace_back((std::stod(wordFromLine, nullptr)));
                                                 // Successful
                                                 hasCylinderBase2 = true;
                                             } catch (const std::invalid_argument &invalidArgument) {
@@ -1151,10 +1133,10 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check radius tag
-                                if(word == "radius"){
-                                    if(issLine >> word){
+                                if(wordFromLine == "radius"){
+                                    if(issLine >> wordFromLine){
                                         try {
-                                            cylinderRadius.emplace_back(std::stod(word, nullptr));
+                                            cylinderRadius.emplace_back(std::stod(wordFromLine, nullptr));
                                             // Check data
                                             if(cylinderRadius[cylinderRadius.size()-1] <= 0){
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_RADIUS_INPUT);
@@ -1173,10 +1155,10 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check surface_size
-                                if(word == "surface_size"){
-                                    if(issLine >> word){
+                                if(wordFromLine == "surface_size"){
+                                    if(issLine >> wordFromLine){
                                         try {
-                                            cylinderSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                            cylinderSurfaceSize.emplace_back(std::stod(wordFromLine, nullptr));
                                             // Check data
                                             if(cylinderSurfaceSize[cylinderSurfaceSize.size()-1] <= 0){
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_INPUT);
@@ -1195,7 +1177,7 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check for new part tags arriving too early and stop getting words
-                                if(word == "block" || word == "cone" || word == "cylinder")
+                                if(wordFromLine == "block" || wordFromLine == "cone" || wordFromLine == "cylinder")
                                     break;
                             }
                             // Check if all cylinder data members have been entered
@@ -1205,7 +1187,7 @@ void StarJob::loadStarJob() {
                             }
 
                             // Check for new parts and stop getting lines
-                            if(word == "block" || word == "cone" || word == "cylinder")
+                            if(wordFromLine == "block" || wordFromLine == "cone" || wordFromLine == "cylinder")
                                 break;
                         }
                         // Missing data
@@ -1221,54 +1203,49 @@ void StarJob::loadStarJob() {
                             throw "cylinder <radius> is missing";}
                         if(!hasCylinderSurfaceSize){
                             g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CYLINDER_SURFACE_SIZE_MISSING);
-                            throw "cylinder <surface_size> is missing";}
-//                        // Get words from line into issLine and word
-//                        issLine.str("");            // Empty issLine
-//                        issLine.clear();            // Clear stream's error state
-//                        issLine.str(line);          // Update stream
-//                        issLine >> word;            // Input first word
+                            throw "cylinder <surface_size> is missing";
+                        }
                     }
 
                     // CONE
 
                     // Check cone tag
-                    if(word == "cone"){
-//                        hasCone = true;
+                    if(wordFromLine == "cone"){
                         // Set cone data members to false until data arrives
-                        hasConeBase1       = false;
-                        hasConeBase2       = false;
-                        hasConeRadius1     = false;
-                        hasConeRadius2     = false;
-                        hasConeSurfaceSize = false;
+                        bool hasConeBase1       = false;
+                        bool hasConeBase2       = false;
+                        bool hasConeRadius1     = false;
+                        bool hasConeRadius2     = false;
+                        bool hasConeSurfaceSize = false;
 
                         // Get cone data
-                        while(std::getline(starJobFile, line)) {
+                        while(std::getline(starJobFile, lineFromFile)) {
                             // Get words from line into issLine
                             issLine.str("");            // Empty issLine
                             issLine.clear();            // Clear stream's error state
-                            issLine.str(line);          // Update stream
-                            while (issLine >> word) {
+                            issLine.str(lineFromFile);          // Update stream
+                            while (issLine >> wordFromLine) {
                                 // Check cone base_1
-                                if(word == "base_1"){
+                                if(wordFromLine == "base_1"){
                                     int coordinates = 0;
-                                    while((issLine >> word) && coordinates < 3){
+                                    while((issLine >> wordFromLine) && coordinates < 3){
                                         if(coordinates == 0)
                                             try {
-                                                coneX1.emplace_back(std::stod(word, nullptr));
+                                                coneX1.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_X1_INPUT);
                                                 throw "invalid argument for X in cone <base_1> (double)";
                                             }
                                         else if(coordinates == 1)
                                             try {
-                                                coneY1.emplace_back(std::stod(word, nullptr));
+                                                coneY1.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_1_Y1_INPUT);
                                                 throw "invalid argument for Y in cone <base_1> (double)";
                                             }
                                         else if(coordinates == 2){
                                             try {
-                                                coneZ1.emplace_back((std::stod(word, nullptr)));
+                                                coneZ1.emplace_back((std::stod(wordFromLine, nullptr)));
                                                 // Successful
                                                 hasConeBase1 = true;
                                             } catch (const std::invalid_argument &invalidArgument) {
@@ -1286,26 +1263,26 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check cone base_2
-                                if(word == "base_2"){
+                                if(wordFromLine == "base_2"){
                                     int coordinates = 0;
-                                    while((issLine >> word) && coordinates < 3){
+                                    while((issLine >> wordFromLine) && coordinates < 3){
                                         if(coordinates == 0)
                                             try {
-                                                coneX2.emplace_back(std::stod(word, nullptr));
+                                                coneX2.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_X2_INPUT);
                                                 throw "invalid argument for X in cone <base_2> (double)";
                                             }
                                         else if(coordinates == 1)
                                             try {
-                                                coneY2.emplace_back(std::stod(word, nullptr));
+                                                coneY2.emplace_back(std::stod(wordFromLine, nullptr));
                                             } catch (const std::invalid_argument &invalidArgument) {
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_BASE_2_Y2_INPUT);
                                                 throw "invalid argument for Y in cone <base_2> (double)";
                                             }
                                         else if(coordinates == 2){
                                             try {
-                                                coneZ2.emplace_back((std::stod(word, nullptr)));
+                                                coneZ2.emplace_back((std::stod(wordFromLine, nullptr)));
                                                 // Successful
                                                 hasConeBase2 = true;
                                             } catch (const std::invalid_argument &invalidArgument) {
@@ -1323,10 +1300,10 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check radius_1 tag
-                                if(word == "radius_1"){
-                                    if(issLine >> word){
+                                if(wordFromLine == "radius_1"){
+                                    if(issLine >> wordFromLine){
                                         try {
-                                            coneRadius1.emplace_back(std::stod(word, nullptr));
+                                            coneRadius1.emplace_back(std::stod(wordFromLine, nullptr));
                                             // Check data
                                             if(coneRadius1[coneRadius1.size()-1] <= 0){
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_1_INPUT);
@@ -1345,10 +1322,10 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check radius_2 tag
-                                if(word == "radius_2"){
-                                    if(issLine >> word){
+                                if(wordFromLine == "radius_2"){
+                                    if(issLine >> wordFromLine){
                                         try {
-                                            coneRadius2.emplace_back(std::stod(word, nullptr));
+                                            coneRadius2.emplace_back(std::stod(wordFromLine, nullptr));
                                             // Check data
                                             if(coneRadius2[coneRadius2.size()-1] <= 0){
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_RADIUS_2_INPUT);
@@ -1367,10 +1344,10 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check surface_size
-                                if(word == "surface_size"){
-                                    if(issLine >> word){
+                                if(wordFromLine == "surface_size"){
+                                    if(issLine >> wordFromLine){
                                         try {
-                                            coneSurfaceSize.emplace_back(std::stod(word, nullptr));
+                                            coneSurfaceSize.emplace_back(std::stod(wordFromLine, nullptr));
                                             // Check data
                                             if(coneSurfaceSize[coneSurfaceSize.size()-1] <= 0){
                                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_INPUT);
@@ -1389,7 +1366,7 @@ void StarJob::loadStarJob() {
                                 }
 
                                 // Check for new part tags arriving too early and stop getting words
-                                if(word == "block" || word == "cylinder" || word == "cone" )
+                                if(wordFromLine == "block" || wordFromLine == "cylinder" || wordFromLine == "cone" )
                                     break;
                             }
                             // Check if all cone data members have been entered
@@ -1400,7 +1377,7 @@ void StarJob::loadStarJob() {
                             }
 
                             // Check for new parts and stop getting lines
-                            if(word == "block" || word == "cone" || word == "cylinder")
+                            if(wordFromLine == "block" || wordFromLine == "cone" || wordFromLine == "cylinder")
                                 break;
                         }
                         // Missing data
@@ -1424,15 +1401,10 @@ void StarJob::loadStarJob() {
                             g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CONE_SURFACE_SIZE_MISSING);
                             throw "cone <surface_size> is missing";
                         }
-//                        // Get words from line into issLine and word
-//                        issLine.str("");            // Empty issLine
-//                        issLine.clear();            // Clear stream's error state
-//                        issLine.str(line);          // Update stream
-//                        issLine >> word;            // Input first word
                     }
 
                     // Check ##END_VOLUMETRIC_CONTROLS tag
-                    if(hasBeginVolumetricControls && (word == "#END_VOLUMETRIC_CONTROLS")){
+                    if(hasBeginVolumetricControls && (wordFromLine == "#END_VOLUMETRIC_CONTROLS")){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Volumetric controls"
                                   << std::right << std::setw(mediumColumn) << ".";
                         colorText("Loaded\n", GREEN);
@@ -1455,14 +1427,14 @@ void StarJob::loadStarJob() {
             if(!physicsModel && !busyElsewhere){
 
                 // Check #BEGIN_PHYSICS_MODEL tag
-                if(hasBeginStarJob && (word == "#BEGIN_PHYSICS_MODEL"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_PHYSICS_MODEL"))
                     hasBeginPhysicsModel = true;
 
                 // Check dynamic_viscosity
-                if(hasBeginPhysicsModel && (word == "dynamic_viscosity")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "dynamic_viscosity")){
+                    if(issLine >> wordFromLine){
                         try {
-                            dynamicViscosity = std::stod(word, nullptr);
+                            dynamicViscosity = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(dynamicViscosity <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_INPUT);
@@ -1472,7 +1444,6 @@ void StarJob::loadStarJob() {
                             g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_INPUT);
                             throw "invalid argument for <dynamic_viscosity> (double > 0)";
                         }
-//                        hasDynamicViscosity = true;
                     } else {
                         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_DYNAMIC_VISCOSITY_EMPTY);
                         throw "<dynamic_viscosity> is empty";
@@ -1480,10 +1451,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check static_temperature
-                if(hasBeginPhysicsModel && word == ("static_temperature")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && wordFromLine == ("static_temperature")){
+                    if(issLine >> wordFromLine){
                         try {
-                            staticTemperature = std::stod(word, nullptr);
+                            staticTemperature = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(staticTemperature <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_STATIC_TEMPERATURE_INPUT);
@@ -1502,10 +1473,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check reference_pressure
-                if(hasBeginPhysicsModel && (word == "reference_pressure")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "reference_pressure")){
+                    if(issLine >> wordFromLine){
                         try {
-                            referencePressure = std::stod(word, nullptr);
+                            referencePressure = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(referencePressure <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_PRESSURE_INPUT);
@@ -1524,10 +1495,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check reference_velocity
-                if(hasBeginPhysicsModel && (word == "reference_velocity")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "reference_velocity")){
+                    if(issLine >> wordFromLine){
                         try {
-                            referenceVelocity = std::stod(word, nullptr);
+                            referenceVelocity = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(referenceVelocity <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_VELOCITY_INPUT);
@@ -1546,10 +1517,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check reference_density
-                if(hasBeginPhysicsModel && (word == "reference_density")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "reference_density")){
+                    if(issLine >> wordFromLine){
                         try {
-                            referenceDensity = std::stod(word, nullptr);
+                            referenceDensity = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(referenceDensity <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_REFERENCE_DENSITY_INPUT);
@@ -1568,10 +1539,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check mach_number
-                if(hasBeginPhysicsModel && (word == "mach_number")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "mach_number")){
+                    if(issLine >> wordFromLine){
                         try {
-                            machNumber = std::stod(word, nullptr);
+                            machNumber = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(machNumber <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MACH_NUMBER_INPUT);
@@ -1590,10 +1561,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check flow_direction_X
-                if(hasBeginPhysicsModel && (word == "flow_direction_X")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "flow_direction_X")){
+                    if(issLine >> wordFromLine){
                         try {
-                            flowDirectionX = std::stod(word, nullptr);
+                            flowDirectionX = std::stod(wordFromLine, nullptr);
                             // Successful
                             hasFlowDirectionX = true;
                         } catch (const std::invalid_argument &invalidArgument) {
@@ -1607,10 +1578,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check flow_direction_Y
-                if(hasBeginPhysicsModel && (word == "flow_direction_Y")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "flow_direction_Y")){
+                    if(issLine >> wordFromLine){
                         try {
-                            flowDirectionY = std::stod(word, nullptr);
+                            flowDirectionY = std::stod(wordFromLine, nullptr);
                             // Successful
                             hasFlowDirectionY = true;
                         } catch (const std::invalid_argument &invalidArgument) {
@@ -1624,10 +1595,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check flow_direction_Z
-                if(hasBeginPhysicsModel && (word == "flow_direction_Z")){
-                    if(issLine >> word){
+                if(hasBeginPhysicsModel && (wordFromLine == "flow_direction_Z")){
+                    if(issLine >> wordFromLine){
                         try {
-                            flowDirectionZ = std::stod(word, nullptr);
+                            flowDirectionZ = std::stod(wordFromLine, nullptr);
                             // Successful
                             hasFlowDirectionZ = true;
                         } catch (const std::invalid_argument &invalidArgument) {
@@ -1641,7 +1612,7 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check #END_PHYSICS_MODEL
-                if(hasBeginPhysicsModel && (word == "#END_PHYSICS_MODEL")){
+                if(hasBeginPhysicsModel && (wordFromLine == "#END_PHYSICS_MODEL")){
                     // Check physics model data is complete
                     if(hasStaticTemperature      &&
                             hasReferencePressure &&
@@ -1706,14 +1677,14 @@ void StarJob::loadStarJob() {
             if(!solverOptions && !busyElsewhere){
 
                 // Check #BEGIN_SOLVER_OPTIONS tag
-                if(hasBeginStarJob && (word == "#BEGIN_SOLVER_OPTIONS"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_SOLVER_OPTIONS"))
                     hasBeginSolverOptions = true;
 
                 // Check CFL
-                if(hasBeginSolverOptions && (word == "CFL")){
-                    if(issLine >> word){
+                if(hasBeginSolverOptions && (wordFromLine == "CFL")){
+                    if(issLine >> wordFromLine){
                         try {
-                            CFL = std::stod(word, nullptr);
+                            CFL = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(CFL <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_SOLVER_OPTIONS_CFL_INPUT);
@@ -1731,7 +1702,7 @@ void StarJob::loadStarJob() {
                     }
                 }
 
-                if(hasBeginSolverOptions && (word == "#END_SOLVER_OPTIONS")){
+                if(hasBeginSolverOptions && (wordFromLine == "#END_SOLVER_OPTIONS")){
                     // Check solver options data is complete
                     if(hasCFL){
                         std::cout << std::setfill('.') << std::left  << std::setw(largeColumn) << "Solver options"
@@ -1761,14 +1732,14 @@ void StarJob::loadStarJob() {
             if(!stoppingCriteria && !busyElsewhere){
 
                 // Check #BEGIN_STOPPING_CRITERIA tag
-                if(hasBeginStarJob && (word == "#BEGIN_STOPPING_CRITERIA"))
+                if(hasBeginStarJob && (wordFromLine == "#BEGIN_STOPPING_CRITERIA"))
                     hasBeginStoppingCriteria = true;
 
                 // Check max_steps
-                if(hasBeginStoppingCriteria && (word == "max_steps")){
-                    if(issLine >> word){
+                if(hasBeginStoppingCriteria && (wordFromLine == "max_steps")){
+                    if(issLine >> wordFromLine){
                         try {
-                            maxSteps = std::stoi(word, nullptr);
+                            maxSteps = std::stoi(wordFromLine, nullptr);
                             // Check data
                             if(maxSteps <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_MAX_STEPS_INPUT);
@@ -1787,10 +1758,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check num_samples
-                if(hasBeginStoppingCriteria && (word == "num_samples")){
-                    if(issLine >> word){
+                if(hasBeginStoppingCriteria && (wordFromLine == "num_samples")){
+                    if(issLine >> wordFromLine){
                         try {
-                            numSamples = std::stoi(word, nullptr);
+                            numSamples = std::stoi(wordFromLine, nullptr);
                             // Check data
                             if(numSamples <= 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_NUM_SAMPLES_INPUT);
@@ -1809,10 +1780,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check asymptotic_CL
-                if(hasBeginStoppingCriteria && (word == "asymptotic_CL")){
-                    if(issLine >> word){
+                if(hasBeginStoppingCriteria && (wordFromLine == "asymptotic_CL")){
+                    if(issLine >> wordFromLine){
                         try {
-                            asymptoticCL = std::stod(word, nullptr);
+                            asymptoticCL = std::stod(wordFromLine, nullptr);
                             // Successful
                             hasAsymptotycCL = true;
                         } catch (const std::invalid_argument &invalidArgument) {
@@ -1826,10 +1797,10 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check asymptotic_CD
-                if(hasBeginStoppingCriteria && (word == "asymptotic_CD")){
-                    if(issLine >> word){
+                if(hasBeginStoppingCriteria && (wordFromLine == "asymptotic_CD")){
+                    if(issLine >> wordFromLine){
                         try {
-                            asymptoticCD = std::stod(word, nullptr);
+                            asymptoticCD = std::stod(wordFromLine, nullptr);
                             // Check data
                             if(asymptoticCD < 0){
                                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_ASYMPTOTIC_CD_INPUT);
@@ -1848,7 +1819,7 @@ void StarJob::loadStarJob() {
                 }
 
                 // Check #END_STOPPING_CRITERIA tag
-                if(hasBeginStoppingCriteria && (word == "#END_STOPPING_CRITERIA")){
+                if(hasBeginStoppingCriteria && (wordFromLine == "#END_STOPPING_CRITERIA")){
                     // Check if stopping criteria data is complete
                     if(hasMaxSteps &&
                             // If has samples, it must have criteria for CL and/or CD
@@ -1881,7 +1852,7 @@ void StarJob::loadStarJob() {
             }
             // END STOPPING CRITERIA
         }
-        // Out of word loop
+        // Out of wordFromLine loop
         if(hasEndStarJob)
             break;
     }
@@ -1890,7 +1861,7 @@ void StarJob::loadStarJob() {
 
     // Check that job has #END_STAR_JOB tag
     if(!hasEndStarJob)
-        std::cout << "WARNING: <star_jobData> is missing #END_STAR_JOB tag" << std::endl;
+        colorText("\nWARNING: <star_jobData> is missing #END_STAR_JOB tag\n", YELLOW);
 
     // Check that all mandatory section have been loaded
     if(!jobSetup){
@@ -1929,23 +1900,48 @@ void StarJob::loadStarJob() {
     }
 }
 
+/*
+ * FUNCTION printTwoColumns(std::string _c1, std::string _c2)
+ *
+ * DESCRIPTION
+ * Prints text in two medium sized columns (_c1 and _c2)
+ */
 void StarJob::printTwoColumns(std::string _c1, std::string _c2) const {
     std::cout << std::setfill(' ') << std::right << std::setw(mediumColumn) << _c1
                                    << std::left << std::setw(mediumColumn)  << " " + _c2 << std::endl;
 }
 
+/*
+ * FUNCTION printTwoColumnsprintTwoColumns(std::string _c1, std::string _c2, char _fill)
+ *
+ * DESCRIPTION
+ * Prints text in two medium sized columns (_c1 and _c2).
+ * The space to the left of _c1 is filled with _fill
+ */
 void StarJob::printTwoColumns(std::string _c1, std::string _c2, char _fill) const {
     std::cout << std::setfill(_fill) << std::right << std::setw(mediumColumn) << _c1
                                      << std::left << std::setw(mediumColumn)  << _c2 << std::endl;
 }
 
+/*
+ * FUNCTION printThreeColumns(std::string _c1, std::string _c2, std::string _c3)
+ *
+ * DESCRIPTION
+ * Prints text in three medium sized columns (_c1, _c2 and _c3)
+ */
 void StarJob::printThreeColumns(std::string _c1, std::string _c2, std::string _c3) const {
     std::cout << std::setfill(' ') << std::left << std::setw(mediumColumn) << _c1
                                    << std::left << std::setw(mediumColumn) << _c2
                                    << std::left << std::setw(mediumColumn) << _c3 << std::endl;
 }
 
-void StarJob::printJobData(){
+/*
+ * FUNCTION printJobData()
+ *
+ * DESCRIPTION
+ * Prints the data for the simulation
+ */
+void StarJob::printJobData() const {
     std::cout << "\n:::::::::::: JOB "; colorText(jobName + "\n\n", WHITE_BLUE);
 
     // Job setup

@@ -2,8 +2,8 @@
  * LIBRARY star_client
  *
  * DESCRIPTION
- * Functions used in the client that sends data and jobs
- * to the STAR CCM+ server.
+ * Functions used in the RemoteStar client that loads data, sends jobs
+ * to the STAR CCM+ server and fetches results.
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
@@ -28,7 +28,7 @@ enum CopyDirection{
     FROM_SERVER,
 };
 
-// When using scp the commend syntax changes is copying a file or a folder
+// When using scp the commend syntax changes if copying a file or a folder
 enum CopyOptions{
     COPY_FILE = 0,
     COPY_FOLDER,
@@ -48,14 +48,14 @@ enum Color{
 // Print interpreted error message and exit
 void errorInterpreted(const std::string& _errorMessage);
 
-// Print error message to std::cerr and exit
+// Print error message in red and exit
 void exitNow(const std::string& _errorMessage);
 
 // Change current directory
 void changeWorkingDirectory(const std::string &_workingDirectory);
 
-// Get current working directory
-std::string getWorkingDirectory();
+//// Get current working directory
+//std::string getWorkingDirectory();
 
 // Check if file exists in a directory
 bool fileExists(const std::string& _filePath);

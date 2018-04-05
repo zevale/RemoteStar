@@ -1,14 +1,15 @@
 #ifndef EXIT_CODES_H
 #define EXIT_CODES_H
 
-// External declaration of variable for exit status
+// Forward declaration of global variable for exit status shared by files handling exceptions
 extern int g_exitStatus;
 
 
-
+// ExitCodes used for error tracking and reporting through updates on "g_exitStatus"
 enum class ExitCodes {
     SUCCESS                                            ,
     FAILURE_COMMAND_LINE_USAGE                         , // Wrong command line syntax
+    FAILURE_OPEN_SSH_NOT_FOUND                         , // Windows OpenSSH is missing
     FAILURE_JOB_FILE_CANNOT_OPEN                       , // Unable to open job file
     FAILURE_JOB_FILE_JOB_NAME_EMPTY                    , // Job file: <job_name> is empty
     FAILURE_JOB_FILE_JOB_NAME_MISSING                  , // Job file: <job_name> is missing
@@ -169,5 +170,4 @@ enum class ExitCodes {
     FAILURE_RESULTS_SIM_UNABLE_TO_FETCH                , // Results: unable to fetch sim file from server
     FAILURE_RESULTS_FORCES_SIM_UNABLE_TO_FETCH         , // Results: unable to fetch forces and sim file from server
 };
-
 #endif //EXIT_CODES_H

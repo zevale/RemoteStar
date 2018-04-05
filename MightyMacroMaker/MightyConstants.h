@@ -8,15 +8,18 @@ namespace Math {
     constexpr int precision (10);
 }
 
-namespace Default{
+namespace Default {
     // ---------- GENERIC
     const char* const filePath          ("empty_path");
     const char* const initializationJob ("empty_job");
     constexpr    bool newMesh           (true);
-    constexpr    bool newPhysics        (true);
+//    constexpr    bool newPhysics        (true);
     constexpr     int scalar            (32);
     constexpr    bool boolean           (false);
     constexpr    bool deactivated       (false);
+
+    // ---------- STAR-CCM+ PATH
+    const char* const starPath("/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ");
 
     // ---------- PAUSE
     constexpr int pauseTime = 3000; // Milliseconds
@@ -31,9 +34,9 @@ namespace Default{
     constexpr double minimumTargetSurfaceSize (0.001); // [m]
 
     // ---------- PRISM LAYER MESH (STANDARD CONFIG AS PER SIEMENS RECOMMENDATIONS)
-    constexpr double  boundaryMarchAngle      (85);
-    constexpr double  minimumThickness        (5);
-    constexpr double  layerChoppingPercentage (10);
+    constexpr double  boundaryMarchAngle      (85);     // NO USER INPUT FROM JOB FILE
+    constexpr double  minimumThickness        (5);      // NO USER INPUT FROM JOB FILE
+    constexpr double  layerChoppingPercentage (10);     // NO USER INPUT FROM JOB FILE
 
     // ---------- NO PRISM LAYER BY DEFAULT
     constexpr int zeroLayers(0);

@@ -13,7 +13,7 @@
 #include <unistd.h>   // _chdir and _getcwd
 #endif
 
-// Linux support
+// Linux and Mac support
 #if defined(linux) || defined(__APPLE__)
 #include <unistd.h>             // chdir and _getcwd
 #include <spawn.h>              // Because of posix_spawn()
@@ -39,7 +39,7 @@ void errorInterpreted(const std::string& _errorMessage) {
     exit(EXIT_FAILURE);
 }
 
-// Print error message to std::cerr and exit
+// Print error message in and exit
 void exitNow(const std::string& _errorMessage) {
     colorText(_errorMessage, RED);
     exit(g_exitStatus);
@@ -47,9 +47,6 @@ void exitNow(const std::string& _errorMessage) {
 
 // Change current directory
 void changeWorkingDirectory(const std::string &_workingDirectory) {
-//    std::string workingDirectory;
-//    std::cout << "\nPlease enter working directory: " << std::endl;
-//    std::cin >> workingDirectory; std::cin.ignore();
 #if _WIN32
     if(_chdir(_workingDirectory.c_str())<0)
         errorInterpreted("ERROR: cannot change directory");
@@ -60,18 +57,18 @@ void changeWorkingDirectory(const std::string &_workingDirectory) {
 #endif
 }
 
-// Get current working directory
-std::string getWorkingDirectory() {
-    char currentDirectory[MAX_PATH];
-    memset(currentDirectory, '\0', MAX_PATH);
-#ifdef _WIN32
-    _getcwd(currentDirectory, MAX_PATH);
-#endif
-#if defined(linux) || defined(__APPLE__)
-    getcwd(currentDirectory, MAX_PATH);
-#endif
-    return std::string(currentDirectory);
-}
+//// Get current working directory
+//std::string getWorkingDirectory() {
+//    char currentDirectory[MAX_PATH];
+//    memset(currentDirectory, '\0', MAX_PATH);
+//#ifdef _WIN32
+//    _getcwd(currentDirectory, MAX_PATH);
+//#endif
+//#if defined(linux) || defined(__APPLE__)
+//    getcwd(currentDirectory, MAX_PATH);
+//#endif
+//    return std::string(currentDirectory);
+//}
 
 // Check if file exists in a directory
 bool fileExists(const std::string& _filePath) {
@@ -86,8 +83,8 @@ bool fileExists(const std::string& _filePath) {
  *
  * DESCRIPTION
  * Executes a Windows process using createProcessA.
- * Executes a Linux process using spawn. When connecting screen,
- * Linux clients use system().
+ * Executes a Linux or Mac process using spawn. When connecting screen,
+ * Linux and Mac clients use system().
  *
  * RETURN
  * TRUE (1) in case of success or FALSE (0) otherwise
@@ -401,13 +398,18 @@ void loadingScreen(const SSH& _sshConnection){
  * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int initializeSSH(SSH& _sshConnection) {
-    // Load ssh server data
+    // Load ssh server data and check OpenSSH installation
     try {
         _sshConnection.loadSSH();
+#ifdef _WIN32
+        if(!fileExists("C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe")){
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_OPEN_SSH_NOT_FOUND);
+            throw "please install OpenSSH for Windows";
+        }
+#endif
     } catch (const char* loadSshException) {
         // Error loading ssh server data from <star_sshServer>
         colorText("\n     ERROR: " + std::string(loadSshException) + "\n", RED);
-//        std::cerr << "\nERROR: " << loadSshException << std::endl;
         return FALSE;
     }
     // Show SSH server
@@ -443,7 +445,7 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
 
         // Initialize sheBang and STAR CCM+ command line arguments
         std::string sheBang = "#!/bin/sh\n";
-        std::string starPath = "/opt/CD-adapco/12.02.011-R8/STAR-CCM+12.02.011-R8/star/bin/starccm+ ";
+        std::string starPath(Default::starPath);
         std::string starLicense = "-power ";
 //        std::string starExit = "";
         std::string starInfiniBand = "-fabric IBV ";
@@ -485,14 +487,11 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
     } catch (const char* loadHostException) {
         // Error loading hosts from <star_hostList>
         colorText("\n      ERROR: " + std::string(loadHostException) + "\n", RED);
-//        std::cerr << "\nERROR: " << loadHostException << std::endl;
         return FALSE;
     }
     // Show host list
     _starHost.printHostList();
 
-//    std::cout << "\n Press <enter> to continue..." << std::endl;
-//    std::cin.get();
     return TRUE;
 }
 
@@ -533,7 +532,6 @@ int initializeStarJob(StarJob& _starJob) {
     } catch(const char * loadJobException) {
         // Error loading hosts from <star_hostList>
         colorText("\n      ERROR: " + std::string(loadJobException) + "\n", RED);
-//        std::cerr << "ERROR: " << loadJobException << std::endl;
         return FALSE;
     }
     // Check resources: <star_sshServer> <star_hostList>
@@ -602,7 +600,6 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
     if(!fileExists(_starJob.getClientJobDirectory("Forces.csv"))){
         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_FORCES_UNABLE_TO_FETCH);
         colorText("      ERROR: Unable to fetch Forces.csv from server!", RED);
-//        std::cerr << "ERROR: Unable to fetch Forces.csv from server!" << std::endl;
         forcesFetched = false;
     }
 
@@ -612,11 +609,10 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
                    _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
         if (!fileExists(_starJob.getClientJobDirectory(_starJob.getJobName() + ".sim"))){
             colorText("      ERROR: Unable to fetch sim File from server", RED);
-//            std::cerr << "ERROR: Unable to fetch Sim File from server" << std::endl;
             simFetched = false;
-            if(forcesFetched && !simFetched)
+            if(forcesFetched)
                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_SIM_UNABLE_TO_FETCH);
-            else if(!forcesFetched && !simFetched)
+            else
                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_FORCES_SIM_UNABLE_TO_FETCH);
         }
     }
@@ -625,7 +621,6 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
     if(_starJob.getCleanServer() && forcesFetched && simFetched){
         secureShell(_sshConnection, "rm -r " + _starJob.getServerJobDirectory());
         colorText("\nNOTE: job folder deleted from server\n\n", YELLOW);
-//        std::cerr << "\nNOTE: job folder deleted from server" << std::endl;
     }
 
     return ((forcesFetched && simFetched)? TRUE : FALSE);
@@ -645,7 +640,7 @@ void colorText(const std::string& _text, Color _color){
 
     // color your text in Windows console mode
     // colors are 0=black 1=blue 2=green and so on to 15=white
-    // colorattribute = foreground + background * 16
+    // colorAttribute = foreground + background * 16
     // to get red text on yellow use 4 + 14*16 = 228
     // light red on yellow would be 12 + 14*16 = 236
 
