@@ -90,8 +90,8 @@ int main(int argc, char * argv[]) {
     if(!initializeStarHost(starHost, starJob))
         exitNow("TERMINATING: cannot initialize hosts");
 
-//    // Submit job to the server, copy files and launch simulation
-//    submitJob(sshConnection, starJob);
+    // Submit job to the server, copy files and launch simulation
+    submitJob(sshConnection, starJob);
 
     // Fetch results
     if(!fetchResults(sshConnection, starJob))

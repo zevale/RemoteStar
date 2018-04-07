@@ -565,9 +565,11 @@ void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
             "cd " + _starJob.getServerJobDirectory("resources/") + " && chmod 775 star_runScript";
     secureShell(_sshConnection, setScriptPermissions);
 
-    // SSH command: run using screen  -d -m means new screen session in detached mode
-    std::string newScreenSession = "screen -S starSession -d -m " +
-            _starJob.getServerJobDirectory("resources/star_runScript");
+    // SSH command: run using screen  -d -m: session in detached mode and log output
+    std::string newScreenSession = "screen -dmS starSession " +
+            _starJob.getServerJobDirectory("resources/star_runScript") +
+            " && screen -S starSession -X logfile " + _starJob.getServerJobDirectory(_starJob.getJobName() + ".log") +
+            " && screen -S starSession -X log";
     secureShellScreen(_sshConnection, newScreenSession);
 
     // Connect to screen to monitor
@@ -615,6 +617,13 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
             else
                 g_exitStatus = static_cast<int>(ExitCodes::FAILURE_RESULTS_FORCES_SIM_UNABLE_TO_FETCH);
         }
+    }
+
+    // Log file
+    secureCopy(_sshConnection, _starJob.getServerJobDirectory(_starJob.getJobName() + ".log"),
+               _starJob.getClientJobDirectory(), FROM_SERVER, COPY_FILE);
+    if(!fileExists(_starJob.getClientJobDirectory(_starJob.getJobName() + ".log"))){
+        colorText("    WARNING: Unable to fetch log file from server!\n", YELLOW);
     }
 
     // Clean server only if files have been correctly fetched
