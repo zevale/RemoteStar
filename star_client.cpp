@@ -189,9 +189,6 @@ char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray)
  * DESCRIPTION
  * Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
  * Must use an authentication key for automatic login.
- *
- * RETURN
- * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute) {
 #ifdef _WIN32
@@ -222,11 +219,13 @@ int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
     // Execute SSH
 #ifdef _WIN32
     if(!(executeProcess(moduleName, commandArgs))) {
-        std::cerr << "ERROR: cannot execute SSH command" << std::endl;
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_SHEEL);
+        throw "cannot execute SSH command";
         return FALSE;
     }
 #endif
 #if defined(linux) || defined(__APPLE__)
+    // UPDATE WITH EXCEPTION
     // Check if it is a screen command
     if(screenConnect){
         // Use system()
@@ -248,9 +247,6 @@ int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
  * DESCRIPTION
  * Execute screen instruction needed to start STAR CCM+ as an independent process
  * that keeps running in case of ssh connection failure.
- *
- * RETURN
- * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute) {
 #ifdef _WIN32
@@ -274,7 +270,8 @@ int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToEx
 
     // Execute SSH screen
     if(!(executeProcess(moduleName, commandArgs))) {
-        std::cerr << "ERROR: cannot execute SSH screen" << std::endl;
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_SHEEL_SCREEN);
+        throw "cannot execute SSH screen";
         return FALSE;
     }
     return TRUE;
@@ -285,9 +282,6 @@ int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToEx
  *
  * DESCRIPTION
  * Execute SCP from client computer to SSH server. Client must use an authentication key.
- *
- * RETURN
- * TRUE (1) in case of success or FALSE (0) otherwise
  */
 int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
                const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOptions) {
@@ -307,7 +301,7 @@ int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
     std::string scp("scp");
     if(_copyOptions == COPY_FOLDER){
         // Add recursive option
-        scp = scp + " -r";
+        scp += " -r";
     }
 
     // Check copy direction
@@ -328,7 +322,8 @@ int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
 
     // Execute SCP
     if(!executeProcess(moduleName, commandArgs)) {
-        std::cerr << "ERROR: cannot execute SCP" << std::endl;
+        g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_COPY);
+        throw "cannot execute SCP command";
         return FALSE;
     }
     return TRUE;
@@ -549,31 +544,40 @@ int initializeStarJob(StarJob& _starJob) {
  *
  * DESCRIPTION
  * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
+ *
+ * RETURN
+ * TRUE (1) in case of success or FALSE (0) otherwise
  */
-void submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
+int submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
 
-    // SSH command: create job folder
-    std::string createServerFolders = "mkdir -p " + _starJob.getServerJobDirectory();
-    secureShell(_sshConnection, createServerFolders);
+    try {
+        // SSH command: create job folder
+        std::string createServerFolders = "mkdir -p " + _starJob.getServerJobDirectory();
+        secureShell(_sshConnection, createServerFolders);
 
-    // SCP client resources folder
-    secureCopy(_sshConnection, _starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)),
-               _starJob.getServerJobDirectory(), TO_SERVER, COPY_FOLDER);
+        // SCP client resources folder
+        secureCopy(_sshConnection, _starJob.getClientJobDirectory("resources" +  std::string(CrossPlatform::separator)),
+                   _starJob.getServerJobDirectory(), TO_SERVER, COPY_FOLDER);
 
-    // SSH command: set script permissions on server
-    std::string setScriptPermissions =
-            "cd " + _starJob.getServerJobDirectory("resources/") + " && chmod 775 star_runScript";
-    secureShell(_sshConnection, setScriptPermissions);
+        // SSH command: set script permissions on server
+        std::string setScriptPermissions =
+                "cd " + _starJob.getServerJobDirectory("resources/") + " && chmod 775 star_runScript";
+        secureShell(_sshConnection, setScriptPermissions);
 
-    // SSH command: run using screen  -d -m: session in detached mode and log output
-    std::string newScreenSession = "screen -dmS starSession " +
-            _starJob.getServerJobDirectory("resources/star_runScript") +
-            " && screen -S starSession -X logfile " + _starJob.getServerJobDirectory(_starJob.getJobName() + ".log") +
-            " && screen -S starSession -X log";
-    secureShellScreen(_sshConnection, newScreenSession);
+        // SSH command: run using screen  -d -m: session in detached mode and log output
+        std::string newScreenSession = "screen -dmS starSession " +
+                _starJob.getServerJobDirectory("resources/star_runScript") +
+                " && screen -S starSession -X logfile " + _starJob.getServerJobDirectory(_starJob.getJobName() + ".log") +
+                " && screen -S starSession -X log";
+        secureShellScreen(_sshConnection, newScreenSession);
 
-    // Connect to screen to monitor
-    secureShell(_sshConnection, "screen -r starSession");
+        // Connect to screen to monitor
+        secureShell(_sshConnection, "screen -r starSession");
+    } catch(const char* submitJobException) {
+        colorText("\n      ERROR: " + std::string(submitJobException) + "\n", RED);
+        return FALSE;
+    }
+    return TRUE;
 }
 
 /*

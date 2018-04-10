@@ -117,7 +117,7 @@ int initializeStarJob(StarJob& _starJob);
 /*
  * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
  */
-void submitJob(const SSH& _sshConnection, const StarJob& _starJob);
+int submitJob(const SSH& _sshConnection, const StarJob& _starJob);
 
 /*
  * Gets the results from the server

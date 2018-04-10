@@ -7,9 +7,12 @@ extern int g_exitStatus;
 
 // ExitCodes used for error tracking and reporting through updates on "g_exitStatus"
 enum class ExitCodes {
-    SUCCESS                                            ,
+    SUCCESS = 10                                       ,
     FAILURE_COMMAND_LINE_USAGE                         , // Wrong command line syntax
-    FAILURE_OPEN_SSH_NOT_FOUND                         , // Windows OpenSSH is missing
+    FAILURE_SSH_SECURE_SHEEL                           , // SSH: Cannot execute SSH command
+    FAILURE_SSH_SECURE_SHEEL_SCREEN                    , // SSH: Cannot execute SSH screen
+    FAILURE_SSH_SECURE_COPY                            , // SSH: Cannot execute SCP command
+    FAILURE_OPEN_SSH_NOT_FOUND                         , // Windows OpenSSH not found
     FAILURE_JOB_FILE_CANNOT_OPEN                       , // Unable to open job file
     FAILURE_JOB_FILE_JOB_NAME_EMPTY                    , // Job file: <job_name> is empty
     FAILURE_JOB_FILE_JOB_NAME_MISSING                  , // Job file: <job_name> is missing
