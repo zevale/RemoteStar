@@ -1,6 +1,14 @@
+/*
+ * CLASS AutoSave
+ *
+ * DESCRIPTION
+ * Generates the macro autosave settings
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ */
 #ifndef AUTOSAVE_H
 #define AUTOSAVE_H
-
 
 #include <vector>
 #include <string>
@@ -25,6 +33,4 @@ public:
     // Member function
     std::vector<std::string> autoSaveCode();
 };
-
-
 #endif //AUTOSAVE_H

@@ -1,3 +1,13 @@
+/*
+ * CLASS SolutionMonitors
+ *
+ * DESCRIPTION
+ * Monitors for aerodynamic coefficients and loads
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef SOLUTIONMONITORS_H
 #define SOLUTIONMONITORS_H
 

@@ -1,7 +1,13 @@
-//
-// Created by Nuno on 3/15/2018.
-//
-
+/*
+ * CLASS VolumetricControls
+ *
+ * DESCRIPTION
+ * Creates parts and sets a refinement size
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef VOLUMETRICCONTROLS_H
 #define VOLUMETRICCONTROLS_H
 
@@ -27,5 +33,4 @@ public:
     // Member function
     std::vector<std::string> volumetricControlsCode();
 };
-
 #endif //VOLUMETRICCONTROLS_H

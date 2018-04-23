@@ -4,7 +4,7 @@
  * DESCRIPTION
  * StarJob loads the simulation data from the job file passed to the
  * RemoteStar client.
- * This data are shared with:
+ * These data are shared with:
  *    - MightyMacro framework to generate the macro that will setup the simulation
  *    - StarHost to write the run script that launches STAR-CCM+
  *    - submitJob() to send files and commands to the server
@@ -22,7 +22,6 @@
 // Constants defining the column width to print job data
 constexpr int largeColumn  = 32;
 constexpr int mediumColumn = 20;
-// constexpr int smallColumn  = 15;
 
 class StarJob {
 private:
@@ -130,7 +129,6 @@ public:
     int                      getPrismLayers()                                   const;
     double                   getPrismLayerThickness()                           const;
     double                   getNearWallThickness()                             const;
-//    std::vector<std::string> getSurfaceName()                                   const;
     std::vector<double>      getSurfaceSize()                                   const;
     std::vector<double>      getBlockX1()                                       const;
     std::vector<double>      getBlockY1()                                       const;
@@ -174,6 +172,6 @@ public:
 
     // Class methods
     void loadStarJob();
-    void printJobData()                                                         const;
+    void printJobData() const;
 };
 #endif // STARJOB_H

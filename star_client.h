@@ -34,6 +34,7 @@ enum CopyOptions{
     COPY_FOLDER,
 };
 
+// Colors for colorText
 enum Color{
     RED = 0,
     GREEN,
@@ -53,9 +54,6 @@ void exitNow(const std::string& _errorMessage);
 
 // Change current directory
 void changeWorkingDirectory(const std::string &_workingDirectory);
-
-//// Get current working directory
-//std::string getWorkingDirectory();
 
 // Check if file exists in a directory
 bool fileExists(const std::string& _filePath);
@@ -79,19 +77,19 @@ char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray);
 /* Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
  * Must use an authentication key for automatic login.
  */
-int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute);
+void secureShell(const SSH& _sshConnection, const std::string& _commandToExecute);
 
 /*
  * Execute screen instruction needed to start STAR CCM+ as an independent process
  * that keeps running in case of ssh connection failure.
  */
-int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute);
+void secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute);
 
 /* Execute SCP from client computer to SSH server.
  * Must use an authentication key.
  */
-int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
-               const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOption);
+void secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
+                const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOption);
 
 /* Loading screen while STAR CCM+ is loading.
  * A custom text message can be displayed line-by-line while the client is connecting to the server.
@@ -105,7 +103,6 @@ int initializeSSH(SSH& _sshConnection);
 
 /*
  * Loads the host list from file <star_hostList> and generates the shell script that starts up STAR CCM+
- * Will also probably need a StarMacro class that contains information about the macro file path
  */
 int initializeStarHost(StarHost& _starHost, const StarJob& _starJob);
 

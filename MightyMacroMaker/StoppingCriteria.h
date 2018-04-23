@@ -1,6 +1,15 @@
+/*
+ * CLASS StoppingCriteria
+ *
+ * DESCRIPTION
+ * Macro stopping criteria: max steps (and asymptotic criteria)
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef STOPPINGCRITERIA_H
 #define STOPPINGCRITERIA_H
-
 
 #include <vector>
 #include <string>
@@ -19,6 +28,7 @@ public:
                               double _asymptoticCL = Default::asymptoticCL,
                               double _asymptoticCD = Default::asymptoticCD);
 
+    // Member function
     std::vector<std::string> stoppingCriteriaCode();
 };
 #endif //STOPPINGCRITERIA_H

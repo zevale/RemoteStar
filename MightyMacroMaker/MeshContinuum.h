@@ -1,6 +1,15 @@
+/*
+ * CLASS MeshContinnuum
+ *
+ * DESCRIPTION
+ * Enables the mesh models
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef MESHCONTINUUM_H
 #define MESHCONTINUUM_H
-
 
 #include <vector>
 #include <string>

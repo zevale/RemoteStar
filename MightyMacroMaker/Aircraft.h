@@ -9,7 +9,6 @@
  *           E-mail: nunoalvesdesousa@me.com
  *
  */
-
 #ifndef AIRCRAFT_H
 #define AIRCRAFT_H
 

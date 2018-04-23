@@ -16,42 +16,49 @@ struct PrismLayer {
 };
 
 struct FlowDirection {
+    // Regions > Boundaries > Free stream boundary > Physics Values > Flow Direction
     double X; // []
     double Y; // []
     double Z; // []
 };
 
 struct Velocity {
+    // Continua > Physics 1 > Initial conditions > Velocity
     double X; // [m/s]
     double Y; // [m/s]
     double Z; // [m/s]
 };
 
 struct LiftDirection {
+    // Reports > Lift, CL > Direction
     double X; // []
     double Y; // []
     double Z; // []
 };
 
 struct DragDirection {
+    // Reports > Drag, CD > Direction
     double X; // []
     double Y; // []
     double Z; // []
 };
 
 struct ViewUp {
+    // Reports > AircraftArea > View Up
     double X; // []
     double Y; // []
     double Z; // []
 };
 
 struct Normal {
+    // Reports > AircraftArea > Normal
     double X; // []
     double Y; // []
     double Z; // []
 };
 
 struct Block {
+    // Parts > New Shape Part > Block
     std::vector<double> x1;
     std::vector<double> y1;
     std::vector<double> z1;
@@ -62,6 +69,7 @@ struct Block {
 };
 
 struct Cylinder {
+    // Parts > New Shape Part > Cylinder
     std::vector<double> x1;
     std::vector<double> y1;
     std::vector<double> z1;
@@ -73,6 +81,7 @@ struct Cylinder {
 };
 
 struct Cone {
+    // Parts > New Shape Part > Cone
     std::vector<double> x1;
     std::vector<double> y1;
     std::vector<double> z1;
@@ -83,5 +92,4 @@ struct Cone {
     std::vector<double> radius_2;
     std::vector<double> surfaceSize;
 };
-
 #endif //MIGHTYTYPES_H

@@ -1,10 +1,15 @@
-//
-// Created by Nuno on 3/20/2018.
-//
-
-#ifndef CREATESCENES_H
-#define CREATESCENES_H
-
+/*
+ * CLASS MightyScene
+ *
+ * DESCRIPTION
+ * Scene: aircraft Cp contours and domain boundaries' mach contours
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
+#ifndef MIGHTYSCENE_H
+#define MIGHTYSCENE_H
 
 #include <vector>
 #include <string>
@@ -20,5 +25,4 @@ public:
     // Member function
     std::vector<std::string> mightySceneCode();
 };
-
-#endif //CREATESCENES_H
+#endif //MIGHTYSCENE_H

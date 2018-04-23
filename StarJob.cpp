@@ -21,7 +21,7 @@
 #endif
 
 /*
- * Getters
+ * GETTERS
  *
  * NOTE
  * Overloaded getters will append a _subPath to either ClientJobDirectory or ServerJobDirectory .
@@ -108,10 +108,6 @@ double StarJob::getPrismLayerThickness() const {
 double StarJob::getNearWallThickness() const {
     return nearWallThickness;
 }
-
-//std::vector<std::string> StarJob::getSurfaceName() const {
-//    return surfaceName;
-//}
 
 std::vector<double> StarJob::getSurfaceSize() const {
     return surfaceSize;
@@ -334,7 +330,7 @@ void StarJob::loadStarJob() {
     // Check if file is open
     if(!starJobFile.is_open()){
         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_JOB_FILE_CANNOT_OPEN);
-        throw "Cannot open file <star_jobData>";
+        throw "cannot open file <star_jobData>";
     }
 
     // PARSER AUXILIARY VARIABLES (flags)
@@ -368,7 +364,7 @@ void StarJob::loadStarJob() {
     bool hasNearWallThickness   = false;
     bool hasTwoSurfaceSizes     = false;
 
-    // Volumentric control options
+    // Volumetric control options
     bool hasBeginVolumetricControls = false;
 
     // Physics model mandatory options
@@ -416,13 +412,12 @@ void StarJob::loadStarJob() {
         // Get words from line
         std::istringstream issLine(lineFromFile);
         while(issLine >> wordFromLine){
-//            std::cout << word << std::endl;
 
             // Check #BEGIN_STAR_JOB tag
             if(!hasBeginStarJob && (wordFromLine == "#BEGIN_STAR_JOB"))
                 hasBeginStarJob = true;
 
-            // Check #END_STAR_JOB tag and exit
+            // Check #END_STAR_JOB tag and stop wordFromLine
             if(!hasEndStarJob && (wordFromLine == "#END_STAR_JOB")){
                 hasEndStarJob = true;
                 break;
@@ -640,7 +635,6 @@ void StarJob::loadStarJob() {
                              hasBeginPhysicsModel       ||
                              hasBeginSolverOptions      ||
                              hasBeginStoppingCriteria);
-
             if(!regions && !busyElsewhere){
 
                 // Check #BEGIN_REGIONS
@@ -897,8 +891,8 @@ void StarJob::loadStarJob() {
                     // Get first word from line into issLine and word
                     issLine.str("");            // Empty issLine
                     issLine.clear();            // Clear stream's error state
-                    issLine.str(lineFromFile);          // Update stream
-                    issLine >> wordFromLine;            // Input first word
+                    issLine.str(lineFromFile);  // Update stream
+                    issLine >> wordFromLine;    // Input first word
 
                     // BLOCK
 
@@ -1041,6 +1035,7 @@ void StarJob::loadStarJob() {
                             throw "block <surface_size> is missing";
                         }
                     }
+
                     // CYLINDER
 
                     // Check cylinder tag

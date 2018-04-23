@@ -1,9 +1,14 @@
+/*
+ * LIBRARY exit_codes.h
+ *
+ * DESCRIPTION
+ * This exit codes are used by g_exitStatus
+ */
 #ifndef EXIT_CODES_H
 #define EXIT_CODES_H
 
 // Forward declaration of global variable for exit status shared by files handling exceptions
 extern int g_exitStatus;
-
 
 // ExitCodes used for error tracking and reporting through updates on "g_exitStatus"
 enum class ExitCodes {

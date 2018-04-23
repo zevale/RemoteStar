@@ -2,7 +2,9 @@
  * CLASS MightyMacro
  *
  * DESCRIPTION
- *
+ * Main class for the high-level macro API
+ * This class needs a properly initialized StarJob instance to be constructed
+ * To write a macro call method writeMacro on the MightyMacro instance
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
@@ -35,34 +37,34 @@
 
 class MightyMacro {
 private:
-    std::string      macroFilePath;     // File path to the macro
-    std::ofstream    macroFile;         // To write
-    bool             hasInitialization; // An initialization file has been provided
-    bool             newMesh;           // Check the need to mesh
+    std::string      macroFilePath;             // File path to the macro
+    std::ofstream    macroFile;                 // Handle to write macro
+    bool             hasInitialization;         // An initialization file has been provided
+    bool             newMesh;                   // Check the need to mesh
 
-    StarJob            *currentStarJob;
-    Import             import;
-    AutoSave           autoSave;
-    Aircraft           aircraft;
-    Domain             domain;
-    MeshContinuum      meshContinuum;
-    PhysicsContinuum   physicsContinuum;
-    ShowDomain         showDomain;
-    MeshValues         meshValues;
-    VolumetricControls volumetricControls;
-    PhysicsValues      physicsValues;
-    SolverOptions      solverOptions;
-    SolutionMonitors   solutionMonitors;
-    MightyScene        mightyScene;
-    StoppingCriteria   stoppingCriteria;
-    ExportResults      exportResults;
-    CloseSim           closeSim;
+    StarJob            *currentStarJob;         // StarJob instance parsed by star_client
+    Import             import;                  // Section: import macro packages
+    AutoSave           autoSave;                // Section: autosave settings
+    Aircraft           aircraft;                // Section: import aircraft geometry
+    Domain             domain;                  // Section: import domain geometry
+    MeshContinuum      meshContinuum;           // Section: mesh models
+    PhysicsContinuum   physicsContinuum;        // Section: physics models
+    ShowDomain         showDomain;              // Section: generate geometry displayer
+    MeshValues         meshValues;              // Section: mesh surface size and prism layer settings
+    VolumetricControls volumetricControls;      // Section: create volumetric controls
+    PhysicsValues      physicsValues;           // Section: initial and boundary conditions
+    SolverOptions      solverOptions;           // Section: grid sequencing initialization, expert driver, CFL
+    SolutionMonitors   solutionMonitors;        // Section: monitors for aerodynamic coefficients and loads
+    MightyScene        mightyScene;             // Section: Cp and Mach contours
+    StoppingCriteria   stoppingCriteria;        // Section: max steps and asymptotic stopping criteria
+    ExportResults      exportResults;           // Section: pressure (and friction) forces
+    CloseSim           closeSim;                // Section: save and close
 
 public:
     // Constructor
     explicit MightyMacro(StarJob *_currentStarJob);
 
-    // Member functions
+    // Member function
     void writeMacro();
 
 private:

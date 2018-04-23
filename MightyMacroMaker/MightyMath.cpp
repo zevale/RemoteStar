@@ -1,8 +1,8 @@
 #include "MightyMath.h"
+#include "MightyConstants.h"
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
-#include "MightyConstants.h"
 
 std::string javaScientific(double _number){
     std::ostringstream scientificStream;

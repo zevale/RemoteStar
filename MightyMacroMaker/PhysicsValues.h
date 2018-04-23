@@ -1,3 +1,14 @@
+/*
+ * CLASS PhysicsValues
+ * Initial and boundary conditions
+ *
+ * DESCRIPTION
+ *
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef PHYSICSVALUES_H
 #define PHYSICSVALUES_H
 

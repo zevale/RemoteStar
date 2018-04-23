@@ -1,6 +1,15 @@
+/*
+ * CLASS ShowDomain
+ *
+ * DESCRIPTION
+ * Shows the fluid domain
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef SHOWDOMAIN_H
 #define SHOWDOMAIN_H
-
 
 #include <vector>
 #include<string>
@@ -16,6 +25,4 @@ public:
 
     std::vector<std::string> showDomainCode();
 };
-
-
 #endif //MIGHTYMACROMAKER_SHOWDOMAIN_H

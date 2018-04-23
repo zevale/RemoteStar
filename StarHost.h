@@ -38,7 +38,6 @@ public:
     explicit StarHost(bool _batchModeOption = false);
 
     // Getters for private members
-    std::string getAlias    (int _iHost) const;
     std::string getAddress  (int _iHost) const;
     HostType    getHostType (int _iHost) const;
     int         getProcesses(int _iHost) const;

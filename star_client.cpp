@@ -57,19 +57,6 @@ void changeWorkingDirectory(const std::string &_workingDirectory) {
 #endif
 }
 
-//// Get current working directory
-//std::string getWorkingDirectory() {
-//    char currentDirectory[MAX_PATH];
-//    memset(currentDirectory, '\0', MAX_PATH);
-//#ifdef _WIN32
-//    _getcwd(currentDirectory, MAX_PATH);
-//#endif
-//#if defined(linux) || defined(__APPLE__)
-//    getcwd(currentDirectory, MAX_PATH);
-//#endif
-//    return std::string(currentDirectory);
-//}
-
 // Check if file exists in a directory
 bool fileExists(const std::string& _filePath) {
     std::ifstream testFile(_filePath.c_str());
@@ -79,7 +66,7 @@ bool fileExists(const std::string& _filePath) {
 // STAR CLIENT SPECIFIC FUNCTIONS
 
 /*
- * executeProcess()
+ * executeProcess(char * _moduleName, char * _commandArgs)
  *
  * DESCRIPTION
  * Executes a Windows process using createProcessA.
@@ -157,7 +144,7 @@ int executeProcess(char * _moduleName, char * _commandArgs) {
 }
 
 /*
- * strArrayToCharPtrConstPtr()
+ * strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray)
  *
  * DESCRIPTION
  * Using spawn_posix() requires the command line arguments to be type char * const *.
@@ -184,13 +171,18 @@ char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray)
 #endif
 
 /*
- * secureShell()
+ * secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
  *
  * DESCRIPTION
  * Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
  * Must use an authentication key for automatic login.
+ *
+ * RETURN
+ * Void, but throws an exception if the command cannot be executed.
+ * This exception is caught by submitJob(const SSH& _sshConnection, const StarJob& _starJob)
+ *
  */
-int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute) {
+void secureShell(const SSH& _sshConnection, const std::string& _commandToExecute) {
 #ifdef _WIN32
     // Get the ssh.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
@@ -221,7 +213,6 @@ int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
     if(!(executeProcess(moduleName, commandArgs))) {
         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_SHEEL);
         throw "cannot execute SSH command";
-        return FALSE;
     }
 #endif
 #if defined(linux) || defined(__APPLE__)
@@ -234,21 +225,24 @@ int secureShell(const SSH& _sshConnection, const std::string& _commandToExecute)
         // Run command using executeProcess()
         if(!(executeProcess(moduleName, commandArgs))) {
             std::cerr << "ERROR: cannot execute SSH command" << std::endl;
-            return FALSE;
         }
     }
 #endif
-    return TRUE;
 }
 
 /*
- * secureShellScreen()
+ * secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute)
  *
  * DESCRIPTION
  * Execute screen instruction needed to start STAR CCM+ as an independent process
  * that keeps running in case of ssh connection failure.
+ *
+ * RETURN
+ * Void, but throws an exception if the command cannot be executed.
+ * This exception is caught by submitJob(const SSH& _sshConnection, const StarJob& _starJob)
+ *
  */
-int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute) {
+void secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute) {
 #ifdef _WIN32
     // Get the ssh.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
     char moduleName[] = "C:\\Windows\\Sysnative\\OpenSSH\\ssh.exe";
@@ -272,18 +266,22 @@ int secureShellScreen(const SSH& _sshConnection, const std::string& _commandToEx
     if(!(executeProcess(moduleName, commandArgs))) {
         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_SHEEL_SCREEN);
         throw "cannot execute SSH screen";
-        return FALSE;
     }
-    return TRUE;
 }
 
 /*
- * secureCopy()
+ * secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
+ *            const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOptions)
  *
  * DESCRIPTION
  * Execute SCP from client computer to SSH server. Client must use an authentication key.
+ *
+ * RETURN
+ * Void, but throws an exception if the command cannot be executed.
+ * This exception is caught by submitJob(const SSH& _sshConnection, const StarJob& _starJob)
+ *
  */
-int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
+void secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
                const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOptions) {
 #ifdef _WIN32
     // Get the scp.exe module. Important: folder is Sysnative to access 64-bit System32 folder from 32-bit program
@@ -324,13 +322,11 @@ int secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
     if(!executeProcess(moduleName, commandArgs)) {
         g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_COPY);
         throw "cannot execute SCP command";
-        return FALSE;
     }
-    return TRUE;
 }
 
 /*
- * loadingScreen()
+ * loadingScreen(const SSH& _sshConnection)
  *
  * DESCRIPTION
  * Loading screen while STAR CCM+ is loading.
@@ -383,7 +379,7 @@ void loadingScreen(const SSH& _sshConnection){
 }
 
 /*
- * initializeSSH()
+ * initializeSSH(SSH& _sshConnection)
  *
  * DESCRIPTION
  * Loads the SSH server data from file <star_sshServer> and initializes
@@ -442,7 +438,6 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
         std::string sheBang = "#!/bin/sh\n";
         std::string starPath(Default::starPath);
         std::string starLicense = "-power ";
-//        std::string starExit = "";
         std::string starInfiniBand = "-fabric IBV ";
         std::string starHost;
         std::string starMacro = " -batch ";
@@ -491,10 +486,10 @@ int initializeStarHost(StarHost& _starHost, const StarJob& _starJob) {
 }
 
 /*
- * initializeStarJob()
+ * initializeStarJob(StarJob& _starJob)
  *
  * DESCRIPTION
- * Loads the job data from file <star_jobData
+ * Loads the job data from file <star_jobData>
  *
  * RETURN
  * TRUE (1) in case of success or FALSE (0) otherwise
@@ -540,7 +535,7 @@ int initializeStarJob(StarJob& _starJob) {
 }
 
 /*
- * submitJob()
+ * submitJob(const SSH& _sshConnection, const StarJob& _starJob)
  *
  * DESCRIPTION
  * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
@@ -581,7 +576,7 @@ int submitJob(const SSH& _sshConnection, const StarJob& _starJob) {
 }
 
 /*
- * fetchResults()
+ * fetchResults(const SSH& _sshConnection, const StarJob& _starJob)
  *
  * DESCRIPTION
  * Gets the results from the server
@@ -640,7 +635,7 @@ int fetchResults(const SSH& _sshConnection, const StarJob& _starJob) {
 }
 
 /*
- * colorText()
+ * colorText(const std::string& _text, Color _color)
  *
  * DESCRIPTION
  * Prints colored text to the console

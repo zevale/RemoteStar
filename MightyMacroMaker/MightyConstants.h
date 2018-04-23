@@ -3,7 +3,7 @@
 
 #include <string>
 
-// Math
+// Precision (c.f. MightyMath.h)
 namespace Math {
     constexpr int precision (10);
 }
@@ -13,7 +13,6 @@ namespace Default {
     const char* const filePath          ("empty_path");
     const char* const initializationJob ("empty_job");
     constexpr    bool newMesh           (true);
-//    constexpr    bool newPhysics        (true);
     constexpr     int scalar            (32);
     constexpr    bool boolean           (false);
     constexpr    bool deactivated       (false);
@@ -41,8 +40,6 @@ namespace Default {
     // ---------- NO PRISM LAYER BY DEFAULT
     constexpr int zeroLayers(0);
 
-    // ---------- VOLUMETRIC CONTROLS
-    constexpr double surfaceSize (-1e-3); // Negative means no volumetric control
 
     // ---------- PHYSICS VALUES
     constexpr double dynamicViscosity (-1e3); // Negative means field is missing (inviscid)
@@ -65,6 +62,7 @@ namespace Default {
     constexpr double asymptoticCD(-1e3);
 }
 
+// Client separator
 namespace CrossPlatform {
 #ifdef _WIN32
     const char* const separator = "\\";
@@ -73,5 +71,4 @@ namespace CrossPlatform {
     const char* const separator = "/";
 #endif
 }
-
 #endif //MIGHTYCONSTANTS_H

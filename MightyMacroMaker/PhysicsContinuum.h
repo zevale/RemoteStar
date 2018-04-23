@@ -1,6 +1,15 @@
+/*
+ * CLASS MeshContinnuum
+ *
+ * DESCRIPTION
+ * Enable the physics models
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef PHYSICSCONTINUUM_H
 #define PHYSICSCONTINUUM_H
-
 
 #include <vector>
 #include <string>

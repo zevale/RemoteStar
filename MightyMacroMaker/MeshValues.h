@@ -1,6 +1,15 @@
+/*
+ * CLASS MeshValues
+ *
+ * DESCRIPTION
+ * Sets mesh surface sizes and configures the prism layer
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef MESHVALUES_H
 #define MESHVALUES_H
-
 
 #include <vector>
 #include <string>

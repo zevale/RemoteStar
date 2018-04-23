@@ -186,6 +186,15 @@ void MightyMacro::writeMacro() {
     endStarMacro();
 }
 
+/*
+ * openMightyMacroFile()
+ *
+ * DESCRIPTION
+ * Create a new file handle so that MightyMacro can write
+ *
+ * RETURN
+ * File handle
+ */
 std::ofstream MightyMacro::openMightyMacroFile() {
     // Open file in macroFilePath
     std::ofstream mightyMacroFile(macroFilePath.c_str());
@@ -195,15 +204,33 @@ std::ofstream MightyMacro::openMightyMacroFile() {
     return mightyMacroFile;
 }
 
+/*
+ * writeToFile(const std::vector<std::string>& _code)
+ *
+ * DESCRIPTION
+ * Writes a string vector to the file handle macroFile
+ */
 void MightyMacro::writeToFile(const std::vector<std::string>& _code){
     for(const std::string& codeLine : _code)
         macroFile << codeLine << std::endl;
 }
 
+/*
+ * writeImport()
+ *
+ * DESCRIPTION
+ * Write section: Import
+ */
 void MightyMacro::writeImport() {
     writeToFile(import.importCode());
 }
 
+/*
+ * beginStarMacro()
+ *
+ * DESCRIPTION
+ * Extends StarMacro class
+ */
 void MightyMacro::beginStarMacro() {
     std::vector<std::string> code;
     code = {
@@ -216,6 +243,12 @@ void MightyMacro::beginStarMacro() {
     writeToFile(code);
 }
 
+/*
+ * endStarMacro()
+ *
+ * DESCRIPTION
+ * Stops extending StarMacro
+ */
 void MightyMacro::endStarMacro() {
     // Closing bracket
     macroFile << "}";
@@ -224,6 +257,12 @@ void MightyMacro::endStarMacro() {
     macroFile.close();
 }
 
+/*
+ * writeExecute()
+ *
+ * DESCRIPTION
+ * Write macro execute: splits the MightyMacro into the different sections
+ */
 void MightyMacro::writeExecute() {
     std::vector<std::string> code;
     std::vector<std::string> codeBuffer;
@@ -296,20 +335,44 @@ void MightyMacro::writeExecute() {
     writeToFile(code);
 }
 
+/*
+ * writeAutoSave()
+ *
+ * DESCRIPTION
+ * Write section: autoSaveSimulation()
+ */
 void MightyMacro::writeAutoSave() {
     writeToFile(autoSave.autoSaveCode());
 }
 
+/*
+ * writeAircraft()
+ *
+ * DESCRIPTION
+ * Write section: importAircraftGeometry()
+ */
 void MightyMacro::writeAircraft() {
     if(!hasInitialization)
         writeToFile(aircraft.aircraftCode());
 }
 
+/*
+ * writeDomain()
+ *
+ * DESCRIPTION
+ * Write section: importDomainGeometry()
+ */
 void MightyMacro::writeDomain() {
     if(!hasInitialization)
         writeToFile(domain.domainCode());
 }
 
+/*
+ * writeRegion()
+ *
+ * DESCRIPTION
+ * Write section: generateRegions()
+ */
 void MightyMacro::writeRegion() {
 
     // Only run for for new simulations
@@ -342,26 +405,56 @@ void MightyMacro::writeRegion() {
     writeToFile(code);
 }
 
+/*
+ * writeMeshContinuum()
+ *
+ * DESCRIPTION
+ * Write section: meshContinuum()
+ */
 void MightyMacro::writeMeshContinuum() {
     if(!hasInitialization)
         writeToFile(meshContinuum.meshContinuumCode());
 }
 
+/*
+ * writePhysicsContinuum()
+ *
+ * DESCRIPTION
+ * Write section: physicsContinuum()
+ */
 void MightyMacro::writePhysicsContinuum() {
     if(!hasInitialization)
         writeToFile(physicsContinuum.physicsContinuumCode());
 }
 
+/*
+ * writeShowDomain()
+ *
+ * DESCRIPTION
+ * Write section: showDomain()
+ */
 void MightyMacro::writeShowDomain() {
     if(!hasInitialization)
         writeToFile(showDomain.showDomainCode());
 }
 
+/*
+ * writeMeshValues()
+ *
+ * DESCRIPTION
+ * Write section: meshValues()
+ */
 void MightyMacro::writeMeshValues() {
     if(newMesh)
         writeToFile(meshValues.meshValuesCode());
 }
 
+/*
+ * writeVolumetricControls()
+ *
+ * DESCRIPTION
+ * Write section: volumetricControls()
+ */
 void MightyMacro::writeVolumetricControls() {
     // Check volumetric control options exist
     if(!volumetricControls.getBlock().surfaceSize.empty()         ||
@@ -371,23 +464,53 @@ void MightyMacro::writeVolumetricControls() {
     }
 }
 
+/*
+ * writePhysicsValues()
+ *
+ * DESCRIPTION
+ * Write section: physicsValues()
+ */
 void MightyMacro::writePhysicsValues() {
     writeToFile(physicsValues.physicsValuesCode());
 }
 
+/*
+ * writeSolverOptions()
+ *
+ * DESCRIPTION
+ * Write section: solverOptions()
+ */
 void MightyMacro::writeSolverOptions() {
     writeToFile(solverOptions.solverOptionsCode());
 }
 
+/*
+ * writeSolutionMonitors()
+ *
+ * DESCRIPTION
+ * Write section: solutionMonitors()
+ */
 void MightyMacro::writeSolutionMonitors() {
     if(!hasInitialization)
         writeToFile(solutionMonitors.solutionMonitorsCode());
 }
 
+/*
+ * writeStoppingCriteria()
+ *
+ * DESCRIPTION
+ * Write section: stoppingCriteria()
+ */
 void MightyMacro::writeStoppingCriteria() {
     writeToFile(stoppingCriteria.stoppingCriteriaCode());
 }
 
+/*
+ * writeGenerateMesh()
+ *
+ * DESCRIPTION
+ * Write section: generateMesh()
+ */
 void MightyMacro::writeGenerateMesh() {
 
     // No need to run if mesh is the same
@@ -413,11 +536,23 @@ void MightyMacro::writeGenerateMesh() {
     writeToFile(code);
 }
 
+/*
+ * writeMightyScene()
+ *
+ * DESCRIPTION
+ * Write section: createScenes()
+ */
 void MightyMacro::writeMightyScene() {
     if(!hasInitialization)
         writeToFile(mightyScene.mightySceneCode());
 }
 
+/*
+ * writeRunSimulation()
+ *
+ * DESCRIPTION
+ * Write section: runSimulation()
+ */
 void MightyMacro::writeRunSimulation() {
     std::vector<std::string> code;
     code = {
@@ -436,14 +571,32 @@ void MightyMacro::writeRunSimulation() {
     writeToFile(code);
 }
 
+/*
+ * writeExportResults()
+ *
+ * DESCRIPTION
+ * Write section: exportResults()
+ */
 void MightyMacro::writeExportResults() {
     writeToFile(exportResults.exportResultsCode());
 }
 
+/*
+ * writeCloseSim()
+ *
+ * DESCRIPTION
+ * Write section: closeSimulation()
+ */
 void MightyMacro::writeCloseSim() {
     writeToFile(closeSim.closeSimCode());
 }
 
+/*
+ * writeSimCleanup()
+ *
+ * DESCRIPTION
+ * Write section: simCleanup()
+ */
 void MightyMacro::writeSimCleanup() {
 
     // No need to run for new simulations

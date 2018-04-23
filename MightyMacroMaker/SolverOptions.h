@@ -1,6 +1,15 @@
+/*
+ * CLASS SolverOptions
+ *
+ * DESCRIPTION
+ * Grid sequencing initialization, expert driver, CFL
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
 #ifndef SOLVEROPTIONS_H
 #define SOLVEROPTIONS_H
-
 
 #include <vector>
 #include <string>

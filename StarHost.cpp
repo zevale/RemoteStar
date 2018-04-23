@@ -13,17 +13,14 @@
 #endif
 
 /*
- * Constructor
+ * CONSTRUCTOR
+ *
  */
 StarHost::StarHost(bool _batchModeOption) : batchModeOption(_batchModeOption) {}
 
 /*
  * GETTERS
  */
-std::string StarHost::getAlias(int _iHost) const {
-    return alias[_iHost];
-}
-
 std::string StarHost::getAddress(int _iHost) const {
     return address[_iHost];
 }
