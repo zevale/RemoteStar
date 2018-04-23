@@ -1,0 +1,4 @@
+#SSH_SERVER
+alias   Athena
+address cfar-athena.me.uvic.ca
+user    nuno

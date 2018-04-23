@@ -1,0 +1,29 @@
+/*
+ * CLASS Domain
+ *
+ * DESCRIPTION
+ * Holds the file path of the domain geometry and generates
+ * the geometry import code accordingly.
+ *
+ *          Creator: Nuno Alves de Sousa
+ *           E-mail: nunoalvesdesousa@me.com
+ *
+ */
+#ifndef DOMAIN_H
+#define DOMAIN_H
+
+#include <string>
+#include <vector>
+#include "MightyConstants.h"
+
+class Domain {
+private:
+    std::string              geometryFilePath;
+public:
+    // Constructor
+    explicit Domain(const std::string& _geometryFilePath = Default::filePath);
+
+    // Member function
+    std::vector<std::string> domainCode();
+};
+#endif //DOMAIN_H

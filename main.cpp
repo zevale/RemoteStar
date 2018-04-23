@@ -1,72 +1,104 @@
 /*
  * RemoteStar
  *
- * This program copies the files needed to run a STAR CCM+ simulation
- * on a remote server and launches the simulation.
+ * Client for STAR-CCM+ simulations using the MightyMacro framework.
  *
- * Files are copied with scp and commands are sent with ssh.
+ * The program will read a job file with the instructions for the
+ * simulation setup and will then generate the appropriate macro.
+ *
+ * It will also copy the simulation resources on the client machine
+ * to the server and launch the STAR-CCM+ simulation.
+ *
+ * Once the simulation is completed, the results are copied to the
+ * client machine.
+ *
+ * Files are copied and commands are sent using SSH protocol.
  * This requires using Microsoft's native OpenSSH client on
- * windows machines.
+ * Windows machines or the default ssh clients on Mac and Linux
+ * machines.
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
  */
 
-#include <iostream>
 #include "star_client.h"
+#include "exit_codes.h"
+#include "MightyMacroMaker/MightyMacro.h"
 
-int main(int argc, char * argv[])
-{
-    // Connection to localhost: initialize SSH and print connection data
+#include <iostream>
+#include <cstring>
+
+// Program status must be declared as global variable "g_exitStatus"
+int g_exitStatus = static_cast<int>(ExitCodes::SUCCESS);
+
+int main(int argc, char * argv[]) {
+
+    // Handle command line arguments
+    bool        batchModeOption = false; // Batch mode is off by default
+    std::string jobFilePath     = "C:\\Users\\Nuno\\Dev\\RemoteStar\\star_jobData"; // "/Users/Nuno/Dev/RemoteStar/star_jobData";
+    // Check command line arguments
+    switch(argc){
+        case 1:
+            // Default settings: batchMode (false), star_jobData in current working directory
+            break;
+        case 2:
+            if(!(strcmp(argv[1], "-batch"))){
+                // User provided -batch
+                batchModeOption = true;
+            } else {
+                // User provided a file path to star_jobData
+                jobFilePath = std::string(argv[1]);
+            }
+            break;
+        case 3:
+            // User provided an option and a file path to star_jobData
+            // Check option is "-batch"
+            if(!(strcmp(argv[1], "-batch"))){
+                batchModeOption = true;
+                jobFilePath = std::string(argv[2]);
+                break;
+            }
+            // Wrong command line usage
+        default:
+            std::cout << ":::::::::::: RemoteStar\n";
+            std::cout << "Usage [job file path]\n";
+            std::cout << "      [-batch (batch mode on)] [job file path]" << std::endl;
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_COMMAND_LINE_USAGE);
+            exit(g_exitStatus);
+    }
+
+    /*
+     *  RemoteStar client
+     */
+
+    // Initialize starJob: get all relevant simulation data from the job file
+    StarJob starJob(batchModeOption, jobFilePath);
+    if(!initializeStarJob(starJob))
+        exitNow("TERMINATING: cannot load job data\n");
+
+    // Initialize mighty macro framework using job data and write macro
+    MightyMacro mightyMacro(&starJob);
+    mightyMacro.writeMacro();
+
+    // Connection to ssh server: initialize sshConnection
     SSH sshConnection;
-    sshConnection.printConnectionData();
+    if(!initializeSSH(sshConnection))
+        exitNow("TERMINATING: SSH connection cannot be established\n");
 
-    // STAR CCM+ hosts: initialize StarHost
-    StarHost starHost;
-    initializeStarHost(starHost);
+    // STAR CCM+ hosts: initialize starHost and write <star_runScript>
+    StarHost starHost(batchModeOption);
+    if(!initializeStarHost(starHost, starJob))
+        exitNow("TERMINATING: cannot initialize hosts");
 
-    // Set paths to source files and path to destination folder
-#ifdef _WIN32
-    char runStarSource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\runStar";
-    char macroSource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\MacroClean.java";
-    char domainGeometrySource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\DomainGeometry.x_b";
-    char aircraftGeometrySource[] = "C:\\Users\\Nuno\\Desktop\\RemoteStar\\SurfMesh.stl";
-#endif
-#ifdef linux
-    char runStarSource[] = "/home/nuno/Documents/RemoteStar/runStar";
-    char macroSource[] = "/home/nuno/Documents/RemoteStar/MacroClean.java";
-    char domainGeometrySource[] = "/home/nuno/Documents/RemoteStar/DomainGeometry.x_b";
-    char aircraftGeometrySource[] = "/home/nuno/Documents/RemoteStar/SurfMesh.stl";
-#endif
-    char serverDestination[] = "/home/nuno/Desktop/RemoteStar";
+    // Submit job to the server, copy files and launch simulation
+    if(!submitJob(sshConnection, starJob))
+        exitNow("TERMINATING: cannot submit job");
 
-//    // SSH command: create RemoteStar folder
-//    secureShell(sshConnection, (char *) "cd ~/Desktop && mkdir RemoteStar");
-//
-//    // SCP file - shell script runStar
-//    secureCopy(sshConnection, runStarSource, serverDestination);
-//
-//    // SCP file - macro MacroClean.java
-//    secureCopy(sshConnection, macroSource, serverDestination);
-//
-//    // SCP file - domain geometry
-//    secureCopy(sshConnection, domainGeometrySource, serverDestination);
-//
-//    // SCP file - aircraft geometry SurfMesh.stl
-//    secureCopy(sshConnection, aircraftGeometrySource, serverDestination);
-//
-//    // SSH command: set script permissions
-//    secureShell(sshConnection, (char *) "cd /home/nuno/Desktop/RemoteStar && chmod 775 runStar");
-//
-//    // SSH command: run using screen  -d -m means new screen session in detached mode
-//    secureShellScreen(sshConnection, (char *) "screen -S starSession -d -m /home/nuno/Desktop/RemoteStar/runStar");
-//
-//    // Connect to screen to monitor
-//    secureShell(sshConnection, (char *) "screen -r starSession");
-//
-//    /* secureShell and secureCopy output eventual errors to cerr. These errors must be handled so that the simulation
-//     * does not stop.
-//     */
+    // Fetch results
+    if(!fetchResults(sshConnection, starJob))
+        exitNow("\nTERMINATING: error(s) while fetching results\n");
+    else
+        colorText("\nFETCHED RESULTS FROM SERVER!\n", GREEN);
 
-    return EXIT_SUCCESS;
+    return g_exitStatus;
 }

@@ -1,8 +1,9 @@
 /*
- * star_client.h
+ * LIBRARY star_client
  *
- * Functions used in the client that sends data and jobs
- * to the STAR CCM+ server.
+ * DESCRIPTION
+ * Functions used in the RemoteStar client that loads data, sends jobs
+ * to the STAR CCM+ server and fetches results.
  *
  *          Creator: Nuno Alves de Sousa
  *           E-mail: nunoalvesdesousa@me.com
@@ -12,32 +13,52 @@
 #define STAR_CLIENT_H
 
 #include "SSH.h"        // Class SSH used to store ssh connection data
-#include "StarHost.h"
+#include "StarHost.h"   // Class used to store the host list for parallel session
+#include "StarJob.h"    // Class used to store STAR CCM+ job data
 
-#ifdef linux            // Linux systems require an additional function to parse arguments for spawn
-#include <vector>
+// Linux ans Mac support
+#if defined(linux) || defined(__APPLE__)
+#include <vector>       // Linux systems require an additional function to parse arguments for spawn
+#include <unistd.h>     // To work with directories
 #endif
 
-// FORWARD DECLARATIONS
+// When using scp the command syntax changes if copying from or to server
+enum CopyDirection{
+    TO_SERVER = 0,
+    FROM_SERVER,
+};
 
-// Print interpreted error message
-void error(const char* _errorMessage);
+// When using scp the commend syntax changes if copying a file or a folder
+enum CopyOptions{
+    COPY_FILE = 0,
+    COPY_FOLDER,
+};
 
-/* Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
- * Must use an authentication key for automatic login.
- */
-int secureShell(SSH _sshConnection, char *_commandToExecute);
+// Colors for colorText
+enum Color{
+    RED = 0,
+    GREEN,
+    BLUE,
+    AQUA,
+    YELLOW,
+    WHITE_BLUE,
+};
 
-/*
- * Execute screen instruction needed to start STAR CCM+ as an independent process
- * that keeps running in case of ssh connection failure.
- */
-int secureShellScreen(SSH _sshConnection, char *_commandToExecute);
+// GENERAL FUNCTIONALITY
 
-/* Execute SCP from client computer to SSH server.
- * Must use an authentication key.
- */
-int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath);
+// Print interpreted error message and exit
+void errorInterpreted(const std::string& _errorMessage);
+
+// Print error message in red and exit
+void exitNow(const std::string& _errorMessage);
+
+// Change current directory
+void changeWorkingDirectory(const std::string &_workingDirectory);
+
+// Check if file exists in a directory
+bool fileExists(const std::string& _filePath);
+
+// STAR CLIENT SPECIFIC FUNCTIONS
 
 /*
  * Executes a Windows process using createProcessA.
@@ -45,24 +66,63 @@ int secureCopy(SSH _sshConnection, char *_sourceFilePath, char *_destinationPath
  */
 int executeProcess(char * _moduleName, char * _commandArgs);
 
-/* Loading screen while STAR CCM+ is loading.
- * A custom text message can be displayed line-by-line while the client is connecting to the server.
- */
-void loadingScreen(SSH _sshConnection);
-
 /*
- * Using spanw_posix() requires the command line arguments to be type char * const *.
+ * Using spawn_posix() requires the command line arguments to be type char * const *.
  * strArrayToCharPtrConstPtr will convert the split arguments in a vector<string> into char * const *
  */
-#ifdef linux
+#if defined(linux) || defined(__APPLE__)
 char* const* strArrayToCharPtrConstPtr(std::vector<std::string> _stringArray);
 #endif
 
-/*
- * This function will generate the shell script that starts up STAR CCM+
- * Will also probably need a StarMacro class that contains information about the macro file path
+/* Execute SSH commands which must be concatenated like "cmd1 && cmd2 && cmd3 & ...".
+ * Must use an authentication key for automatic login.
  */
-int initializeStarHost(StarHost& _starHost);
+void secureShell(const SSH& _sshConnection, const std::string& _commandToExecute);
 
+/*
+ * Execute screen instruction needed to start STAR CCM+ as an independent process
+ * that keeps running in case of ssh connection failure.
+ */
+void secureShellScreen(const SSH& _sshConnection, const std::string& _commandToExecute);
 
-#endif //SSH_H
+/* Execute SCP from client computer to SSH server.
+ * Must use an authentication key.
+ */
+void secureCopy(const SSH& _sshConnection, const std::string& _sourceFilePath,
+                const std::string& _destinationPath, CopyDirection _copyDirection, CopyOptions _copyOption);
+
+/* Loading screen while STAR CCM+ is loading.
+ * A custom text message can be displayed line-by-line while the client is connecting to the server.
+ */
+void loadingScreen(const SSH& _sshConnection);
+
+/*
+ * Loads the SSH server data from file <star_sshServer> and initializes the _sshConnection
+ */
+int initializeSSH(SSH& _sshConnection);
+
+/*
+ * Loads the host list from file <star_hostList> and generates the shell script that starts up STAR CCM+
+ */
+int initializeStarHost(StarHost& _starHost, const StarJob& _starJob);
+
+/*
+ * Loads the job data file <star_jobData> required to run the STAR CCM+ simulation
+ */
+int initializeStarJob(StarJob& _starJob);
+
+/*
+ * Sends resources to SSH server, submits job to hosts and connects screen to SSH server
+ */
+int submitJob(const SSH& _sshConnection, const StarJob& _starJob);
+
+/*
+ * Gets the results from the server
+ */
+int fetchResults(const SSH& _sshConnection, const StarJob& _starJob);
+#endif // STAR_CLIENT_H
+
+/*
+ * Prints colored text to the console
+ */
+void colorText(const std::string& _text, Color _color);

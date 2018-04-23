@@ -1,0 +1,74 @@
+#BEGIN_STAR_JOB
+
+#BEGIN_JOB_SETUP
+job_name                mightySim
+//initialization_job      mightySimInit
+client_directory        C:\Users\Nuno\Desktop\ClientStar\
+server_directory        /home/nuno/Desktop/RemoteStar/
+save_sim_file           yes
+clean_server            no
+auto_save               yes
+auto_save_files         0
+auto_save_iterations    100
+#END_JOB_SETUP
+
+#BEGIN_REGIONS
+wall                    SurfMesh
+free_stream             FarField
+symmetry_plane          Sym
+#END_REGIONS
+
+#BEGIN_MESH_MODEL
+base_size               0.5
+num_prism_layers        10
+prism_layer_thickness   0.01
+near_wall_thickness     0.000077
+surface_size            SurfMesh        0.025
+surface_size            FarField        3
+surface_size            Sym             3
+#END_MESH_MODEL
+
+#BEGIN_VOLUMETRIC_CONTROLS
+block
+corner_1              -1.00  -0.25 -0.75
+corner_2               3.00   1.60  0.75
+surface_size           0.05
+
+cylinder
+base_1                -0.05 -0.10  0
+base_2                 0.70  1.20  0
+radius                 0.03
+surface_size           0.005
+
+cone
+base_1                 1.10  1.18  0
+base_2                 5.00  1.18  0
+radius_1               0.03
+radius_2               0.5
+surface_size           0.025
+#END_VOLUMETRIC_CONTROLS
+
+#BEGIN_PHYSICS_MODEL
+dynamic_viscosity       0.0000639
+static_temperature      255.5555556
+reference_pressure      315979.763
+reference_velocity      269.1225173
+reference_density       4.307291736
+mach_number             0.8395
+flow_direction_X        0.998574181
+flow_direction_Y        0
+flow_direction_Z        0.05338169
+#END_PHYSICS_MODEL
+
+#BEGIN_SOLVER_OPTIONS
+CFL                     36
+#END_SOLVER_OPTIONS
+
+#BEGIN_STOPPING_CRITERIA
+max_steps               500
+num_samples             75
+asymptotic_CL           0.0001
+asymptotic_CD           0.00001
+#END_STOPPING_CRITERIA
+
+#END_STAR_JOB
