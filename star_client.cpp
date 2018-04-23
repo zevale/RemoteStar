@@ -208,9 +208,6 @@ void secureShell(const SSH& _sshConnection, const std::string& _commandToExecute
     if(screenConnect)
         loadingScreen(_sshConnection);
 
-    if(screenConnect)
-        loadingScreen(_sshConnection);
-
     // Execute SSH
 #ifdef _WIN32
     if(!(executeProcess(moduleName, commandArgs))) {
@@ -219,15 +216,18 @@ void secureShell(const SSH& _sshConnection, const std::string& _commandToExecute
     }
 #endif
 #if defined(linux) || defined(__APPLE__)
-    // UPDATE WITH EXCEPTION
     // Check if it is a screen command
     if(screenConnect){
         // Use system()
-        system(commandArgs);
+        if (system(commandArgs) == -1){
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_SHEEL);
+            throw "cannot execute SSH screen";
+        }
     } else {
         // Run command using executeProcess()
         if(!(executeProcess(moduleName, commandArgs))) {
-            std::cerr << "ERROR: cannot execute SSH command" << std::endl;
+            g_exitStatus = static_cast<int>(ExitCodes::FAILURE_SSH_SECURE_SHEEL);
+            throw "cannot execute SSH command";
         }
     }
 #endif
@@ -351,7 +351,7 @@ void loadingScreen(const SSH& _sshConnection){
     system("cls");
 #endif
 #if defined(linux) || defined(__APPLE__)
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(Default::pauseTime));
     system("clear");
 #endif
     // Loading screen
@@ -689,8 +689,6 @@ void colorText(const std::string& _text, Color _color){
     SetConsoleTextAttribute(hConsole, 15);
 #endif
 #if defined(linux) || defined(__APPLE__)
-    // UNTESTED CODE
-
     std::string escapeSequence;
 
     // Color escape sequences
