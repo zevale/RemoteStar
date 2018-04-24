@@ -3,7 +3,7 @@
 #BEGIN_JOB_SETUP
 job_name                mightySim
 //initialization_job      mightySimInit
-client_directory        /home/nuno/Desktop/MightyMacro/ C:\Users\Nuno\Desktop\ClientStar\
+client_directory        C:\Users\Nuno\Desktop\ClientStar\ /home/nuno/Desktop/MightyMacro/
 server_directory        /home/nuno/Desktop/RemoteStar/
 save_sim_file           yes
 clean_server            no
